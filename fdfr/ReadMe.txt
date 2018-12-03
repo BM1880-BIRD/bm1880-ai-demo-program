@@ -1,3 +1,5 @@
+Face detection and face recognition
+
 Notes:
 the client folder will be compiled as demo_uvc_client,and run on 1880 board.
 the server folder,containing the display.py, run on your ubuntu pc as server.
