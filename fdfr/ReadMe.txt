@@ -7,7 +7,7 @@ Steps:
 2.vim Makefile .and change the BMIVA_DIR & CC to your local path
 3.make
 4.cp demo_uvc_client to your rootfs/system/bin/
-5.enter the server folder.
+5.enter the server folder,and vim display.py -to modify the host address
 6.python display.py -run your host server first
 7.boot up your 1880 board
 8.cd /system/data ; sh load.sh;sh load_jpu.sh; insmod bmnpu.ko;mdev -s ; cd /system/bin;
