@@ -64,6 +64,7 @@ static std::mutex mtx;
 
 void do_recognize_register(cv::Mat &frame,bmiva_face_info_t faceinfo, string name)
 {
+	#if 0
 	Mat grayImage;
 	cv::cvtColor(frame, grayImage, COLOR_BGR2GRAY);
 	cv::Laplacian(grayImage, grayImage, CV_8U);
@@ -77,7 +78,7 @@ void do_recognize_register(cv::Mat &frame,bmiva_face_info_t faceinfo, string nam
 		dbg_printf("%s's image quality is bad. variance=%f\n", name.c_str(), variance);
 	    return;
 	}
-
+	#endif
 	dbg_printf("string name:%s\n",name.c_str());
 	std::fstream feature_fp(FACE_FEATURE_FILE,std::ios::app);
 	//bmiva_face_info_t* faceinfo = &results[0].at(0);
