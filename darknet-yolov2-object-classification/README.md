@@ -1,5 +1,5 @@
 1. Get models:
-https://sophon-file.bitmain.com.cn/sophon-prod/drive/18/11/04/15/models.7z.zip
+https://sophon-file.bitmain.com.cn/sophon-prod/drive/18/11/08/12/models.7z.zip
 
 2. Uncompress the models.7z.zip in the darknet folder.
 3. make sure the BMNNSDK-usb-mode installed in your unbuntu16.04 x86-64 host
