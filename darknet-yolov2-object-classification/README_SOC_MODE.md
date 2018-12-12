@@ -9,6 +9,7 @@ https://sophon-file.bitmain.com.cn/sophon-prod/drive/18/11/04/15/models.7z.zip
 	c. AR set to your 1880 toolchain path(aarch64-linux-gnu-ar )
 	d. LDFLAGS adding the following two libs for running on 1880: -lbmodel -lprotobuf
 	e.COMMON set to your 1880 include path
+	f.CFLAGS adding: -fsigned-char
 
 4. cd darknet-yolov2-object-classification/darknet and make
 
