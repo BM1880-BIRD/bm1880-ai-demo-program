@@ -1,3 +1,14 @@
+/*
+ ********************************************************************
+ * Demo program on Bitmain BM1880
+ *
+ * Copyright © 2018 Bitmain Technologies. All Rights Reserved.
+ *
+ * Author:  liang.wang02@bitmain.com
+ *			xiaojun.zhu@bitmain.com
+ ********************************************************************
+*/
+#include <iostream>
 #include <string>
 #include <unistd.h>
 #include <sys/time.h>
@@ -18,8 +29,9 @@
 #include "bmiva.hpp"
 #include "bmiva_util.hpp"
 #include "bmiva_face.hpp"
-#include "common_config.h"
-#include "face_det.h"
+#include "bm_common_config.h"
+#include "bm_face_det.h"
+#include "bm_spi_tft.h"
 
 using namespace std;
 using namespace cv;
@@ -52,38 +64,10 @@ string record_path = "/demo_program/facedet_record";
 static std::queue<cv::Mat>imagebuffer;
 std::condition_variable available_;
 std::mutex lock_;
+string host_ip_addr;
 
 
-int socket_connect()
-{
-	return 0;
-	#if 0
-	if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-	{
-		LOG(LOG_DEBUG_ERROR,cout<<"create socket error: "<<(strerror(errno))<<"errno:"<<(errno)<<endl);
-		exit(0);
-	}
-
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(8000);
-	if(inet_pton(AF_INET, host_ip_addr.c_str(), &servaddr.sin_addr) <= 0)
-	{
-		LOG(LOG_DEBUG_ERROR,cout<<"inet_pton error"<<endl);
-		exit(0);
-	}
-
-	if(connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
-	{
-		LOG(LOG_DEBUG_ERROR,cout<<"connect error: "<<(strerror(errno))<<"errno: "<<(errno)<<endl);
-		exit(0);
-	}
-
-	LOG(LOG_DEBUG_NORMAL,cout<<"ready to send buffer to server: "<<endl);
-	#endif
-}
-
-void send_socket(cv::Mat frame)
+static void BmFaceSendSocket(cv::Mat frame)
 {
 	int sockfd;
 	if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -154,34 +138,8 @@ void send_socket(cv::Mat frame)
 #endif
 }
 
-#if 0
-void do_recognize_register(cv::Mat &frame,vector<vector<bmiva_face_info_t>>&results, string name)
-{
-	dbg_printf("string name:%s\n",name.c_str());
-	std::fstream feature_fp(FACE_FEATURE_FILE,std::ios::app);
-	bmiva_face_info_t* faceinfo = &results[0].at(0);
-	cv::Mat aligned;
-	if(face_align(frame,aligned,results[0].at(0),FACE_RECOG_IMG_W,FACE_RECOG_IMG_H)!=0)
-	{
-		return;
-	}
-	vector<cv::Mat>align_images;
-	vector<vector<float>>features;
-	align_images.push_back(aligned);
-	bmiva_face_extractor_predict(g_Reghandle,align_images,features);
-	std::ostringstream save_name_feature;
-	save_name_feature << name.c_str();
-	for(auto value:features[0])
-	{
-		save_name_feature << " " <<value;
-	}
-	save_name_feature << endl;
-	feature_fp << save_name_feature.str();
-	feature_fp.close();
-}
-#endif
 
-void* socket_thread(void *arg)
+void* BmFaceSocketThread(void *arg)
 {
 	while(true)
 	{
@@ -196,28 +154,29 @@ void* socket_thread(void *arg)
 			imagebuffer.pop();
 			locker.unlock();
 			LOG(LOG_DEBUG_USER_4,"start to send\n");
-			send_socket(image);
+			BmFaceSendSocket(image);
 			LOG(LOG_DEBUG_USER_4,"send done\n");
 			//usleep(50000);
 		}
 	}
 }
 
-void* openuvc_thread(void *arg)
+void* BmFaceUvcThread(void *arg)
 {
 	int Ret = 0;
 	struct timeval start_time,end_time;
 	
-	if(host_ip_addr.empty())
+	if(host_ip_addr.empty() && (tft_enable == false))
 	{
-		LOG(LOG_DEBUG_ERROR,cout<<" Please set host ip address first."<<endl);
+		LOG(LOG_DEBUG_ERROR,cout<<" Please set host ip address or enable tft lcd first."<<endl);
 		pthread_exit(NULL);
 	}
-	socket_connect();
-	pthread_create(&sk_tid,NULL,socket_thread,NULL);
-	//pthread_join(tid,NULL);
-	//std::thread t(socket_thread);
 
+	if(!host_ip_addr.empty())
+	{
+		pthread_create(&sk_tid,NULL,BmFaceSocketThread,NULL);
+	}
+	
 	string model_dir = "";
 
 	if (algo == BMIVA_FD_MTCNN)
@@ -286,8 +245,6 @@ void* openuvc_thread(void *arg)
 	//capture.set(CV_CAP_PROP_FOURCC,CV_FOURCC('D','I','V','X'));
 	capture.set(CV_CAP_PROP_FOURCC,CV_FOURCC('N','V','1','2'));
 	//capture.set(CV_CAP_PROP_FOURCC,CV_FOURCC('M','J','P','G'));
-	//capture.set(CV_CAP_PROP_FRAME_WIDTH,1280);
-	//capture.set(CV_CAP_PROP_FRAME_HEIGHT,720);
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,UVC_PR_X);
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,UVC_PR_Y);
 	//capture.set(CV_CAP_PROP_FPS,30);
@@ -315,9 +272,7 @@ void* openuvc_thread(void *arg)
 		#endif
 		Mat frame;
 		capture >> frame;
-		#ifdef DEBUG
 		LOG(LOG_DEBUG_USER_4,cout<<"get frame"<<endl);
-		#endif
 		if(frame.empty())
 		{
 			LOG(LOG_DEBUG_ERROR,cout<<"frame empty"<<endl);
@@ -494,7 +449,7 @@ void* openuvc_thread(void *arg)
 					cv::FONT_HERSHEY_PLAIN, 4.0, CV_RGB(255,255,0), 2.0);
 
 					//cv::imwrite(record_path+"/"+person_name+"/"+faceinfo_max.bbox.name+"_"+to_string(do_face_det)+".jpg",frame.clone());
-					cv::imwrite(record_path+"/"+person_name+"/"+faceinfo_max.bbox.name+"_"+to_string(do_face_det)+".jpg",frame.clone());
+					cv::imwrite(record_path+"/"+person_name+"/"+faceinfo_max.bbox.name+"_"+to_string(do_face_det)+".jpg",frame);
 					//cout<<do_face_det<<", "<<record_path+"/"+person_name+"/"+faceinfo_max.bbox.name+"_"+to_string(do_face_det)+".jpg"<<endl;
 
 					char record_info[200];
@@ -525,21 +480,27 @@ void* openuvc_thread(void *arg)
 			float recog_time = (end_time.tv_sec - start_time.tv_sec)*1000000.0 + end_time.tv_usec-start_time.tv_usec;
 			LOG(LOG_DEBUG_NORMAL,"recognize cost time:%f us\n",recog_time);
 		}
+		if(tft_enable)
+		{
+			BmTftDisplayFrame(frame);
+		}
 
 		//send data to socket ===================================
-		cv::Mat img = frame.clone();
-		std::lock_guard<std::mutex> locker(lock_);
+		if(!host_ip_addr.empty())
+		{
+			cv::Mat img = frame.clone();
+			std::lock_guard<std::mutex> locker(lock_);
 			imagebuffer.push(img);
 
 			if (imagebuffer.size() > 3)
-            	imagebuffer.pop();
-        
+			{
+				imagebuffer.pop();
+			}
+			available_.notify_one();
 
-        available_.notify_one();	
-
-		printf("queue size :%d\n",imagebuffer.size());
+			LOG(LOG_DEBUG_NORMAL,cout<<"queue size : "<<imagebuffer.size()<<endl);
+		}
 		
-		//send_socket(&frame);
 		if(performace_test)
 		{
 			gettimeofday(&start_time,NULL);
@@ -548,14 +509,16 @@ void* openuvc_thread(void *arg)
 		}
 	}
 
-	//close(sockfd);
 	bmiva_face_extractor_destroy(g_Reghandle);
 	bmiva_face_detector_destroy(g_handle);
 	bmiva_deinit(g_dev);
+
+	extern int fd_spidev;
+	close(fd_spidev);
 	pthread_exit(NULL);
 }
 
-int cli_cmd_uvc_camera(int argc,char *argv[])
+int CliCmdUvcCamera(int argc,char *argv[])
 {
 	if(argc == 1)
 	{
@@ -566,7 +529,7 @@ int cli_cmd_uvc_camera(int argc,char *argv[])
 	{
 		if(!strcmp(argv[1],"open"))
 		{
-			pthread_create(&uvc_tid,NULL,openuvc_thread,NULL);
+			pthread_create(&uvc_tid,NULL,BmFaceUvcThread,NULL);
 			cout<<"Open uvc camera ."<<endl;
 			return 0;
 		}
@@ -581,7 +544,7 @@ int cli_cmd_uvc_camera(int argc,char *argv[])
 	return -1;
 }
 
-int cli_cmd_do_facedet(int argc,char *argv[])
+int CliCmdDoFaceDet(int argc,char *argv[])
 {
 	char _cmd[200];
 	int value;
@@ -612,7 +575,7 @@ int cli_cmd_do_facedet(int argc,char *argv[])
 	return 0;
 }
 
-int  cli_cmd_threshold_value(int argc, char *argv[])
+int  CliCmdThresholdValue(int argc, char *argv[])
 {
 	//float f;
 	if(argc == 1)
@@ -643,7 +606,7 @@ int  cli_cmd_threshold_value(int argc, char *argv[])
 }
 
 
-int cli_cmd_record_path(int argc, char* argv[])
+int CliCmdRecordPath(int argc, char* argv[])
 {
 	if(argc == 2)
 	{
@@ -653,7 +616,7 @@ int cli_cmd_record_path(int argc, char* argv[])
 	return 0;
 }
 
-int cli_cmd_variance(int argc, char *argv[])
+int CliCmdVariance(int argc, char *argv[])
 {
 	if(argc == 2)
 	{
@@ -664,7 +627,7 @@ int cli_cmd_variance(int argc, char *argv[])
 }
 
 
-int cli_cmd_face_algorithm(int argc, char *argv[])
+int CliCmdFaceAlgorithm(int argc, char *argv[])
 {
 	if(argc == 1)
 	{
