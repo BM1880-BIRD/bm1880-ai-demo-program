@@ -7,8 +7,8 @@ BMIVA_DIR := ${PWD}/../../../bm1880-sdk-v1.0/middleware
 CXX := $(PWD)/../../../gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-g++
 PROM := demo_uvc_client
 DEPS := $(shell find ./ -name "*.h")
-SRC := $(shell find ./ -name "*.cpp")
-OBJS := $(SRC:%.cpp=%.o)
+SRC := $(shell find ./ -name "*.cc")
+OBJS := $(SRC:%.cc=%.o)
 
 LIB_DIR := -L$(BMIVA_DIR)/lib
 RPATH_DIR	 = -Wl,-rpath-link $(BMIVA_DIR)/lib
@@ -20,7 +20,7 @@ INCLUDES := -I$(BMIVA_DIR)/include
 $(PROM): $(OBJS)
 	$(CXX) -o $(PROM) $(OBJS) $(LIBS) $(LIB_DIR) $(RPATH_DIR)
 
-%.o: %.cpp $(DEPS)
+%.o: %.cc $(DEPS)
 	$(CXX) -c $< -o $@ $(INCLUDES)
 
 clean:

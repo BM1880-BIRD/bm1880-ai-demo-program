@@ -3,13 +3,19 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <opencv2/videoio.hpp>
+#include <opencv2/videoio/videoio_c.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
+
 using namespace std;
+using namespace cv;
 
-#include "common_config.h"
-#include "face_det.h"
+#include "bm_common_config.h"
+#include "bm_face_det.h"
+#include "bm_spi_tft.h"
 
-#define DEMO_FW_VERSION "2018/11 : 1.0.1"
-string host_ip_addr="192.168.1.127";
+
 int log_level = DEFAULT_LEVEL;
 #ifdef PERFORMACE_TEST
 bool performace_test = true;
@@ -20,7 +26,7 @@ static char s[MAX_INPUT_CHARS] = "";
 static int _argc=0;
 static char _argv_a[NUM_CMD_PARAM][LEN_CMD_PARAM];
 static char *_argv[NUM_CMD_PARAM];
-int input_cmd_parse(void)
+int InputCmdParse(void)
 {
 	char __cmd[LEN_CMD_PARAM];
 	char pos=0;
@@ -65,33 +71,34 @@ int input_cmd_parse(void)
 }
 
 
-static const DIAG_CLI_CMD_T cmdList[]={
-	{"help","Show how to use this debug system.",cli_cmd_help},
-	{"loglevel","Set debug log level. ",cli_cmd_log_level},
-	{"ipconfig","IP address setting.",cli_cmd_ipconfig},
-	{"threshold","Read the value of sim_threshold",cli_cmd_threshold_value},
-	{"rdpath","Set the test result record path",cli_cmd_record_path},
-	{"variance","Enable/disable variance filter",cli_cmd_variance},
-	{"algorithm","Bmiva face algorithm",cli_cmd_face_algorithm},
-	{"uvc","Open/Stop uvc camera",cli_cmd_uvc_camera},
-	{"facedet","Start face detect program",cli_cmd_do_facedet},
+static const DIAG_CLI_CMD_T CmdList[]={
+	{"help","Show how to use this debug system.",CliCmdHelp},
+	{"loglevel","Set debug log level. ",CliCmdLogLevel},
+	{"ipconfig","IP address setting.",CliCmdIpconfig},
+	{"tft","Tft lcd enable.",CliCmdEnableTft},
+	{"threshold","Read the value of sim_threshold",CliCmdThresholdValue},
+	{"rdpath","Set the test result record path",CliCmdRecordPath},
+	{"variance","Enable/disable variance filter",CliCmdVariance},
+	{"algorithm","Bmiva face algorithm",CliCmdFaceAlgorithm},
+	{"uvc","Open/Stop uvc camera",CliCmdUvcCamera},
+	{"facedet","Start face detect program",CliCmdDoFaceDet},
 	
 	//{"clr","clear all setting", clr_cmd},
 	{"exit","Exit demo program!",NULL},
 };
 
-void list_cli_base(void)
+void ListCliBase(void)
 {
 	cout<<"bm1880:>";
 }
 
-void list_cli_help(void)
+void ListCliHelp(void)
 {
 	int i;
 
-	for(i=0; i<sizeof(cmdList)/sizeof(DIAG_CLI_CMD_T);i++)
+	for(i=0; i<sizeof(CmdList)/sizeof(DIAG_CLI_CMD_T);i++)
 	{
-		cout<<cmdList[i].cmd_name<<"      "<<"\""<<cmdList[i].cmd_info<<"\""<<endl;
+		cout<<CmdList[i].cmd_name<<"      "<<"\""<<CmdList[i].cmd_info<<"\""<<endl;
 	}
 	cout<<"+++++++++++++++++++++++++++++++++++++++++"<<endl;
 }
@@ -115,14 +122,14 @@ int main(int argc, char *argv[])
 	cout<<"## Bitmain Tecknologies.All Rights Reserved."<<endl;
 	cout<<"+++++++++++++++++++++++++++++++++++++++++"<<endl;
 	//fgets_unlocked(s,MAX_INPUT_CHARS,stdin);
-	list_cli_help();
-	list_cli_base();
+	ListCliHelp();
+	ListCliBase();
 	while(1)
 	{
 		fgets(s,MAX_INPUT_CHARS,stdin);
 		//cout<<"your input is :"<<s<<endl;
 
-		if( 0 != input_cmd_parse()){
+		if( 0 != InputCmdParse()){
 			return -1;
 		}
 
@@ -132,19 +139,19 @@ int main(int argc, char *argv[])
 		}
 		if((_argc !=0))
 		{
-			for(i=0; i< sizeof(cmdList)/sizeof(DIAG_CLI_CMD_T);i++)
+			for(i=0; i< sizeof(CmdList)/sizeof(DIAG_CLI_CMD_T);i++)
 			{
-				if(!strcmp(_argv[0],cmdList[i].cmd_name))
+				if(!strcmp(_argv[0],CmdList[i].cmd_name))
 				{
-					//cout<<"i = "<<i<<" "<<cmdList[i].cmd_name<<endl;
-					if(NULL != cmdList[i].func)
+					//cout<<"i = "<<i<<" "<<CmdList[i].cmd_name<<endl;
+					if(NULL != CmdList[i].func)
 					{
-						cmdList[i].func(_argc, (char **)_argv);
+						CmdList[i].func(_argc, (char **)_argv);
 					}
 				}
 			}
 		}
-		list_cli_base();
+		ListCliBase();
 		sleep(1);
 	}
 
@@ -152,13 +159,13 @@ int main(int argc, char *argv[])
 }
 
 
-int cli_cmd_help(int argc, char *argv[])
+int CliCmdHelp(int argc, char *argv[])
 {
-	list_cli_help();
+	ListCliHelp();
 	return 0;
 }
 
-int cli_cmd_ipconfig(int argc, char *argv[])
+int CliCmdIpconfig(int argc, char *argv[])
 {
 	if(argc == 1)
 	{
@@ -177,7 +184,7 @@ int cli_cmd_ipconfig(int argc, char *argv[])
 }
 
 
-int cli_cmd_log_level(int argc, char *argv[])
+int CliCmdLogLevel(int argc, char *argv[])
 {
 	int level;
 	if(argc == 1)
