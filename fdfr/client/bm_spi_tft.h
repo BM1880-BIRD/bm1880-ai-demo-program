@@ -11,6 +11,10 @@
 
 #ifndef _BM_SPI_TFT_H_
 #define _BM_SPI_TFT_H_
+#include <queue>
+#include <mutex>
+#include <thread>
+#include <condition_variable>
 
 #define TFT_COL  320
 #define TFT_ROW  240
@@ -34,8 +38,15 @@
 extern uint8_t tft_display_buf[];
 extern bool tft_enable;
 
+
+extern std::queue<cv::Mat>tft_imagebuffer;
+extern std::condition_variable tft_available_;
+extern std::mutex tft_lock_;
+
+
 int BmTftInit(void);
 void BmTftDisplayFrame(const cv::Mat &frame);
+void BmTftAddDisplayFrame(const cv::Mat &frame);
 int CliCmdEnableTft(int argc, char *argv[]);
 
 #endif

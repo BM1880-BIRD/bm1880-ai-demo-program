@@ -482,7 +482,7 @@ void* BmFaceUvcThread(void *arg)
 		}
 		if(tft_enable)
 		{
-			BmTftDisplayFrame(frame);
+			BmTftAddDisplayFrame(frame);
 		}
 
 		//send data to socket ===================================
@@ -491,13 +491,11 @@ void* BmFaceUvcThread(void *arg)
 			cv::Mat img = frame.clone();
 			std::lock_guard<std::mutex> locker(lock_);
 			imagebuffer.push(img);
-
 			if (imagebuffer.size() > 3)
 			{
 				imagebuffer.pop();
 			}
 			available_.notify_one();
-
 			LOG(LOG_DEBUG_NORMAL,cout<<"queue size : "<<imagebuffer.size()<<endl);
 		}
 		

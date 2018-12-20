@@ -35,10 +35,8 @@ using namespace cv;
 #include "bm_logo_data_hex.inc"
 
 
-
-
 static const char *device = TFT_SPI_DEV;
-static uint32_t mode;
+static uint32_t mode = SPI_MODE_0;
 static uint8_t bits = 8;
 static char *input_file;
 static char *output_file;
@@ -48,8 +46,13 @@ int fd_spidev;
 uint8_t tft_display_buf[TFT_COL*TFT_ROW*2];
 struct spi_ioc_transfer tr;
 bool tft_enable = false;
+//queue &signal for tft display
+std::queue<cv::Mat>tft_imagebuffer;
+std::condition_variable tft_available_;
+std::mutex tft_lock_;
+pthread_t tft_tid;
 
-static void BmSpiTransfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
+static void BmSpiTransfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len ,uint8_t bits)
 {
 	int ret;
 	int out_fd;
@@ -61,21 +64,6 @@ static void BmSpiTransfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t l
 	tr.speed_hz = speed;
 	tr.bits_per_word = bits;
 
-	if (mode & SPI_TX_QUAD)
-		tr.tx_nbits = 4;
-	else if (mode & SPI_TX_DUAL)
-		tr.tx_nbits = 2;
-	if (mode & SPI_RX_QUAD)
-		tr.rx_nbits = 4;
-	else if (mode & SPI_RX_DUAL)
-		tr.rx_nbits = 2;
-	if (!(mode & SPI_LOOP)) {
-		if (mode & (SPI_TX_QUAD | SPI_TX_DUAL))
-			tr.rx_buf = 0;
-		else if (mode & (SPI_RX_QUAD | SPI_RX_DUAL))
-			tr.tx_buf = 0;
-	}
-
 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
 	if (ret < 1)
 	{
@@ -85,7 +73,7 @@ static void BmSpiTransfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t l
 
 static void BmSpiSenddata(uint8_t data)
 {
-	BmSpiTransfer(fd_spidev, &data, NULL, sizeof(data));
+	BmSpiTransfer(fd_spidev, &data, NULL, sizeof(data), 8);
 }
 
 static void TftSt7789vWritecomm(uint8_t u1Cmd)
@@ -196,21 +184,23 @@ static void TftSt7789vBlockWrite(unsigned int Xstart,unsigned int Xend,unsigned 
 	TftSt7789vWritecomm(0x2C);
 }
 
+
 #if 0
 void DispColor(unsigned short color)
 {
 	unsigned int i,j,k=0;
 
-	BlockWrite(0,TFT_COL-1,0,TFT_ROW-1);
+	TftSt7789vBlockWrite(0,TFT_COL-1,0,TFT_ROW-1);
 
-	system("echo 1 > /sys/class/gpio/gpio487/value");//RS=1;
+	//system("echo 1 > /sys/class/gpio/gpio487/value");//RS=1;
+	BmGpioSetValue(TFT_RD_GPIO,1); //RD=1
 
 	for(i=0;i<TFT_ROW;i++)
 	{
 	    for(j=0;j<TFT_COL;j++)
 		{    
-			bm_tft_SendDataSPI(color>>8);
-			bm_tft_SendDataSPI(color);
+			BmSpiSenddata(color>>8);
+			BmSpiSenddata(color);
 			//default_tx[k++] = color;
 			//default_tx[k++] = color;
 		}
@@ -264,26 +254,30 @@ static void BmTftDisplayPicture(uint8_t *picture)
 {
 	uint8_t *p;
 	int i;
-
-	#ifdef PERF_TEST
-	struct timeval start_time,end_time;
-	gettimeofday(&start_time,NULL);
-	#endif
+	int ret = 0;
 	
 	TftSt7789vBlockWrite(0,TFT_COL-1,0,TFT_ROW-1);
 	BmGpioSetValue(TFT_RD_GPIO,1); //RD=1
 	p = picture;
 
+	#if 1
 	for(i=0; i< (TFT_COL*TFT_ROW*2)/4096; i++)
 	{
-		BmSpiTransfer(fd_spidev, (p + i*4096), NULL, 4096);	
+		BmSpiTransfer(fd_spidev, (p + i*4096), NULL, 4096, 16);
 	}
-	BmSpiTransfer(fd_spidev, (p + i*4096), NULL, (320*240*2)%4096);
+	BmSpiTransfer(fd_spidev, (p + i*4096), NULL, (320*240*2)%4096, 16);
+	#else
+	//BmSpiTransfer(fd_spidev, p, NULL, (320*240*2), 16);
+	//cout<<"BmSpiTransfer "<<(320*240*2)<<endl;
 
-	#ifdef PERF_TEST
-	gettimeofday(&end_time,NULL);
-	float cap_cost = (end_time.tv_sec - start_time.tv_sec)*1000000.0 + end_time.tv_usec-start_time.tv_usec;
-	cout<<"cap costtime: "<<cap_cost<<" us."<<endl;
+	//bits per word
+	bits = 16;
+	ret = ioctl(fd_spidev, SPI_IOC_WR_BITS_PER_WORD, &bits);
+	if (ret == -1)
+	{
+		perror("can't set bits per word");
+	}
+	write(fd_spidev, p, (320*240*2));
 	#endif
 }
 
@@ -298,7 +292,6 @@ int BmTftInit(void)
 		perror("can't open device");
 		return fd_spidev;
 	}
-
 	//spi mode
 	ret = ioctl(fd_spidev, SPI_IOC_WR_MODE32, &mode);
 	if (ret == -1)
@@ -313,7 +306,6 @@ int BmTftInit(void)
 		perror("can't get spi mode");
 		return ret;
 	}
-
 	//bits per word
 	ret = ioctl(fd_spidev, SPI_IOC_WR_BITS_PER_WORD, &bits);
 	if (ret == -1)
@@ -343,45 +335,97 @@ int BmTftInit(void)
 		perror("can't get max speed hz");
 		return ret;
 	}
-
 	LOG(LOG_DEBUG_NORMAL,cout<<"spi mode: 0x"<<hex<<mode<<endl);
-	LOG(LOG_DEBUG_NORMAL,cout<<"bits per word: "<<bits<<endl);
+	//LOG(LOG_DEBUG_NORMAL,cout<<"bits per word: "<<bits<<endl);
 	LOG(LOG_DEBUG_NORMAL,cout<<"max speed:"<<speed<<"Hz "<<"\"("<<(speed/1000)<<" KHz)\""<<endl);
 	
 	TftSt7789vInit();
 	//DispBand();
-	//DispColor(RED);
+
+	//BmTftDisplayPicture((uint8_t *)logo_hex_16);
 	BmTftDisplayPicture(logo_hex_8);
+
+	//DispColor(RED);
 	//close(fd_spidev);
 	return ret;
 }
 
+#define PERF_TEST
+
+#ifdef PERF_TEST
+static struct timeval start_time,end_time;
+static float cap_cost;
+#endif
+
 void BmTftDisplayFrame(const cv::Mat &frame)
 {
-	cv::Mat srcImage;
-	cv::resize(frame, srcImage,  Size(320, 240) );
-	//cv::imwrite("/mnt/usb/wl_test1.jpg",frame);
-	//cv::imwrite("/mnt/usb/wl_test2.jpg",srcImage);
-	//imshow("\u663e\u793a\u56fe\u50cf", srcImage);  
+	cv::Mat BGR565;
+	cv::cvtColor(frame,BGR565,cv::COLOR_BGR2BGR565);
+	BmTftDisplayPicture(BGR565.data);
 
-	int rowNumber = srcImage.rows;  
-	int colNumber = srcImage.cols;  
+#ifdef PERF_TEST
+	gettimeofday(&end_time,NULL);
+	cap_cost = (end_time.tv_sec - start_time.tv_sec)*1000000.0 + end_time.tv_usec-start_time.tv_usec;
+	cout<<"get buf costtime: "<<cap_cost<<" us."<<endl;
+	gettimeofday(&start_time,NULL);
+#endif
+#if 0
+	int rowNumber = srcImage.rows;	
+	int colNumber = srcImage.cols;	
 	int i,j;
 	for (i = 0; i < rowNumber; i++)
 	{
 		for (j= 0; j < colNumber; j++)
 		{
-			unsigned short B = srcImage.at<Vec3b>(i, j)[0];	//B
-			unsigned short G = srcImage.at<Vec3b>(i, j)[1];	//G
-			unsigned short R = srcImage.at<Vec3b>(i, j)[2];	//R
+			unsigned short B = srcImage.at<Vec3b>(i, j)[0]; //B
+			unsigned short G = srcImage.at<Vec3b>(i, j)[1]; //G
+			unsigned short R = srcImage.at<Vec3b>(i, j)[2]; //R
 			//hex 8
 			unsigned short pix_data = ((R << 8) & 0xF800) | ((G << 3) & 0x07E0) | ((B >> 3) & 0x001F);
 			tft_display_buf[i*colNumber*2 + j*2 ] = (char)((pix_data >> 8) & 0xFF); 
 			tft_display_buf[i*colNumber*2 + j*2 + 1] = (char)(pix_data & 0xFF); 
 		}
 	}
-	BmTftDisplayPicture(tft_display_buf);
+	//memcpy(tft_display_buf,BGR565.data,320*240*2);
+	//BmTftDisplayPicture(tft_display_buf);
+#endif
 }
+
+void* BmTftThread(void *arg)
+{
+	while(true)
+	{
+		std::unique_lock<std::mutex> locker(tft_lock_);
+		tft_available_.wait(locker);
+		
+		if(!tft_imagebuffer.empty())
+		{
+			auto image = std::move(tft_imagebuffer.front());
+			tft_imagebuffer.pop();
+			locker.unlock();
+			LOG(LOG_DEBUG_USER_4,"start to send frame to tft\n");
+			BmTftDisplayFrame(image);
+			LOG(LOG_DEBUG_USER_4,"send done\n");
+			//usleep(50000);
+		}
+	}
+}
+
+void BmTftAddDisplayFrame(const cv::Mat &frame)
+{
+	cv::Mat img_resize;
+	cv::resize(frame, img_resize,  Size(320, 240) );
+	std::lock_guard<std::mutex> locker(tft_lock_);
+	tft_imagebuffer.push(img_resize);
+	if (tft_imagebuffer.size() > 3)
+	{
+		tft_imagebuffer.pop();
+		LOG(LOG_DEBUG_NORMAL,cout<<"queue full"<<endl);
+	}
+	tft_available_.notify_one();
+	LOG(LOG_DEBUG_NORMAL,cout<<"queue size : "<<tft_imagebuffer.size()<<endl);
+}
+
 
 int CliCmdEnableTft(int argc, char *argv[])
 {
@@ -391,15 +435,21 @@ int CliCmdEnableTft(int argc, char *argv[])
 		cout<<"Usage: tft enable"<<endl;
 		return 0;
 	}
-	else if(argc == 2)
+	else //if(argc == 2)
 	{
 		if((!strcmp(argv[1],"enable")))
 		{
 			tft_enable = true;
 			BmTftInit();
+			pthread_create(&tft_tid,NULL,BmTftThread,NULL);
 			cout<<"tft_enable : "<<tft_enable<<endl;
-			return 0;
+			//return 0;
 		}
+		if((!strcmp(argv[2],"speed")))
+		{
+			speed = atoi(argv[3]);
+		}
+		return 0;
 	}
 	cout<<"Input Error !!\n"<<endl;
 	return -1;
