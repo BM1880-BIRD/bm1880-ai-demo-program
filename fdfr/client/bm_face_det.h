@@ -12,8 +12,8 @@
 #ifndef __FACE_DET_H__
 #define __FACE_DET_H__
 
-#define UVC_PR_X  (640)
-#define UVC_PR_Y  (480)
+#define UVC_PR_X  (1280)
+#define UVC_PR_Y  (720)
 
 #define FACE_RECOG_IMG_W 112
 #define FACE_RECOG_IMG_H 112

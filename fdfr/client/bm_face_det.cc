@@ -267,9 +267,12 @@ void* BmFaceUvcThread(void *arg)
 
 	while(1)
 	{
-		#ifdef PERF_TEST
+		//#ifdef PERF_TEST
+		gettimeofday(&end_time,NULL);
+		float cap_cost = (end_time.tv_sec - start_time.tv_sec)*1000000.0 + end_time.tv_usec-start_time.tv_usec;
+		LOG(LOG_DEBUG_NORMAL,cout<<"fd/fr costtime: "<<(cap_cost)<<" us ."<<endl);
 		gettimeofday(&start_time,NULL);
-		#endif
+		//#endif
 		Mat frame;
 		capture >> frame;
 		LOG(LOG_DEBUG_USER_4,cout<<"get frame"<<endl);

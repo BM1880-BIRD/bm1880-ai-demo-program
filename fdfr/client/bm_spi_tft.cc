@@ -260,7 +260,7 @@ static void BmTftDisplayPicture(uint8_t *picture)
 	BmGpioSetValue(TFT_RD_GPIO,1); //RD=1
 	p = picture;
 
-	#if 1
+	#if 0
 	for(i=0; i< (TFT_COL*TFT_ROW*2)/4096; i++)
 	{
 		BmSpiTransfer(fd_spidev, (p + i*4096), NULL, 4096, 16);
@@ -366,7 +366,7 @@ void BmTftDisplayFrame(const cv::Mat &frame)
 #ifdef PERF_TEST
 	gettimeofday(&end_time,NULL);
 	cap_cost = (end_time.tv_sec - start_time.tv_sec)*1000000.0 + end_time.tv_usec-start_time.tv_usec;
-	cout<<"get buf costtime: "<<cap_cost<<" us."<<endl;
+	cout<<"BmTftDisplayFrame costtime: "<<cap_cost<<" us."<<endl;
 	gettimeofday(&start_time,NULL);
 #endif
 #if 0
