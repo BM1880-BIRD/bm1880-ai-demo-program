@@ -5,7 +5,7 @@ BMIVA_DIR := ${PWD}/../../../bm1880-system-sdk/middleware
 #
 #CXX = aarch64-linux-gnu-g++
 CXX := $(PWD)/../../../gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-g++
-PROM := demo_uvc_client
+PROM := bm1880_demo
 DEPS := $(shell find ./ -name "*.h")
 SRC := $(shell find ./ -name "*.cc")
 OBJS := $(SRC:%.cc=%.o)
