@@ -62,7 +62,7 @@ BmivaFeature g_name_features;
 static std::queue<cv::Mat>imagebuffer;
 static std::mutex mtx;
 
-void do_recognize_register(cv::Mat &frame,bmiva_face_info_t faceinfo, string name)
+void DoRecognizeRegister(cv::Mat &frame,bmiva_face_info_t faceinfo, string name)
 {
 	#if 0
 	Mat grayImage;
@@ -101,7 +101,7 @@ void do_recognize_register(cv::Mat &frame,bmiva_face_info_t faceinfo, string nam
 	feature_fp << save_name_feature.str();
 	feature_fp.close();
 	//fg_register = 0;
-	cout<<"do_recognize_register OK"<<endl;
+	cout<<"DoRecognizeRegister OK"<<endl;
 }
 
 std::string  get_name(char *p_name)
@@ -306,7 +306,7 @@ void showAllFiles( string dir_name )
 					bmiva_face_info_t faceinfo_max;
 					faceinfo_max = results[0][max_size_id];
 					//cout<<"Face info score : "<<faceinfo_max.bbox.score<<endl;
-					do_recognize_register(frame,faceinfo_max,name);
+					DoRecognizeRegister(frame,faceinfo_max,name);
 					dbg_printf("detect ok , %s \n",dir_or_file.c_str());
 
 					cv::imwrite(registered_pic_path + dir_or_file, frame);
