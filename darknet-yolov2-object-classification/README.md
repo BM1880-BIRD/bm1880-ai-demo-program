@@ -23,5 +23,7 @@ run the command ./demo.sh images/
 
 2. when booting up your 1880 board, vi the demo.sh ,and change the DEMO_DIR to your darknet-yolov2-object-classification path. you need also change the pushd/popd command to "cd" command
 
-3. cd to the darknet-yolov2-object-classification folder and  run the command: ./demo.sh images/
+3. cd /system/data; sh load_driver.sh
+
+4. cd to the darknet-yolov2-object-classification folder and  run the command: ./demo.sh images/
 
