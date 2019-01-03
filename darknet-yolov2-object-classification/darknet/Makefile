@@ -8,6 +8,15 @@ endif
 OPENMP=0
 DEBUG=0
 
+#you should change to your toolchain path here when in soc mode
+ifeq ($(MODE), SOC)
+TOOLCHAIN_PATH=/home/test/bitmain_dev/bmiva/bm1880/host-tools/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin
+endif
+
+#you should change to your bmnnsdk path here
+BMNNSDK_PATH=/home/test/bm1880-bmnnsdk-soc/bmtap2-bm1880-soc_1.0.2
+
+
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
@@ -24,8 +33,8 @@ EXEC=darknet
 OBJDIR=./obj/
 
 ifeq ($(MODE), SOC)
-CC=/home/test/bitmain_dev/bmiva/bm1880/host-tools/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc 
-AR=/home/test/bitmain_dev/bmiva/bm1880/host-tools/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-ar
+CC=$(TOOLCHAIN_PATH)/aarch64-linux-gnu-gcc 
+AR=$(TOOLCHAIN_PATH)/aarch64-linux-gnu-ar
 else
 CC=gcc
 AR=ar
@@ -34,15 +43,15 @@ NVCC=nvcc
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread
-LDFLAGS+= -L/home/test/bm1880-bmnnsdk-soc/bmtap2-bm1880-soc_1.0.2/lib/soc/ -lbmutils -lbmruntime -lbmkernel -lglog -lstdc++
+LDFLAGS+= -L$(BMNNSDK_PATH)/lib/soc/ -lbmutils -lbmruntime -lbmkernel -lglog -lstdc++
 ifeq ($(MODE), SOC)
 LDFLAGS+= -lbmodel -lprotobuf
 endif
 # LDFLAGS+= -L/home/min/code/bmtap2/install/lib -lbmutils -lbmruntime -lbmkernel -lglog -lstdc++
 COMMON= -Iinclude/ -Isrc/
 # COMMON += -I/home/min/code/bmtap2/install/include
-COMMON += -I/home/test/bm1880-bmnnsdk-soc/bmtap2-bm1880-soc_1.0.2/include/libbmruntime
-COMMON += -I/home/test/bm1880-bmnnsdk-soc/bmtap2-bm1880-soc_1.0.2/include
+COMMON += -I$(BMNNSDK_PATH)/include/libbmruntime
+COMMON += -I$(BMNNSDK_PATH)/include
 CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
 ifeq ($(MODE), SOC)
 CFLAGS += -fsigned-char
