@@ -1,7 +1,10 @@
 GPU=0
 CUDNN=0
+ifeq ($(MODE), SOC)
+OPENCV=0
+else
 OPENCV=1
-# OPENCV=0
+endif
 OPENMP=0
 DEBUG=0
 
@@ -20,20 +23,30 @@ ALIB=libdarknet.a
 EXEC=darknet
 OBJDIR=./obj/
 
+ifeq ($(MODE), SOC)
+CC=/home/test/bitmain_dev/bmiva/bm1880/host-tools/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc 
+AR=/home/test/bitmain_dev/bmiva/bm1880/host-tools/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-ar
+else
 CC=gcc
-NVCC=nvcc 
 AR=ar
+endif
+NVCC=nvcc
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread
-LDFLAGS+= -L/opt/bmtap2/bm1880-usb_1.0.2.2/lib -lbmutils -lbmruntime -lbmkernel -lglog -lstdc++
+LDFLAGS+= -L/home/test/bm1880-bmnnsdk-soc/bmtap2-bm1880-soc_1.0.2/lib/soc/ -lbmutils -lbmruntime -lbmkernel -lglog -lstdc++
+ifeq ($(MODE), SOC)
+LDFLAGS+= -lbmodel -lprotobuf
+endif
 # LDFLAGS+= -L/home/min/code/bmtap2/install/lib -lbmutils -lbmruntime -lbmkernel -lglog -lstdc++
 COMMON= -Iinclude/ -Isrc/
 # COMMON += -I/home/min/code/bmtap2/install/include
-COMMON += -I/opt/bmtap2/bm1880-usb_1.0.2.2/include/libbmruntime
-COMMON += -I/opt/bmtap2/bm1880-usb_1.0.2.2/include
+COMMON += -I/home/test/bm1880-bmnnsdk-soc/bmtap2-bm1880-soc_1.0.2/include/libbmruntime
+COMMON += -I/home/test/bm1880-bmnnsdk-soc/bmtap2-bm1880-soc_1.0.2/include
 CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
-
+ifeq ($(MODE), SOC)
+CFLAGS += -fsigned-char
+endif
 ifeq ($(OPENMP), 1) 
 CFLAGS+= -fopenmp
 endif
