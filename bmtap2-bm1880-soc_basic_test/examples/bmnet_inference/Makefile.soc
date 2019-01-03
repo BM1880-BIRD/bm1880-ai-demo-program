@@ -1,0 +1,13 @@
+SRC = bmnet_inference.cpp
+PROGRAM = bmnet_inference
+
+CXX = aarch64-linux-gnu-g++
+CXXFLAGS = -std=c++11 -O2 -g -Wall -I../../include
+LDFLAGS = -L../../lib/soc -L/usr/local/ramdisk/prebuild/lib
+LDLIBS = -lbmruntime -lbmkernel -lbmutils -lbmodel -lglog
+
+all:
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(PROGRAM) $(SRC) $(LDLIBS)
+
+clean:
+	@rm -f $(PROGRAM)

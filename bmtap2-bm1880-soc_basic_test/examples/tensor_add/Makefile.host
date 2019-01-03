@@ -1,0 +1,16 @@
+SRC = tensor_add.cpp
+PROGRAM = tensor_add
+
+CXX = g++
+CXXFLAGS = -std=c++11 -O2 -g -Wall -I../../include
+LDFLAGS = -L../../lib/usb
+LDLIBS =  -lbmruntime -lbmkernel -lbmutils -lbmodel
+
+all:
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(PROGRAM) $(SRC) $(LDLIBS)
+
+clean:
+	@rm -f $(PROGRAM)
+
+test:
+	./$(PROGRAM)
