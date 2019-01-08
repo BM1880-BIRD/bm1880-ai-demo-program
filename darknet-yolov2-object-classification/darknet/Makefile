@@ -13,8 +13,8 @@ ifeq ($(MODE), SOC)
 TOOLCHAIN_PATH=/home/test/bitmain_dev/bmiva/bm1880/host-tools/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin
 endif
 
-#you should change to your bmnnsdk path here
-BMNNSDK_PATH=/home/test/bm1880-bmnnsdk-soc/bmtap2-bm1880-soc_1.0.2
+#you should change to your bm1880 system sdk path here
+BMNNSDK_PATH=/home/test/bm1880-system-sdk/middleware
 
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
@@ -43,7 +43,7 @@ NVCC=nvcc
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread
-LDFLAGS+= -L$(BMNNSDK_PATH)/lib/soc/ -lbmutils -lbmruntime -lbmkernel -lglog -lstdc++
+LDFLAGS+= -L$(BMNNSDK_PATH)/lib/ -lbmutils -lbmruntime -lbmkernel -lglog -lstdc++
 ifeq ($(MODE), SOC)
 LDFLAGS+= -lbmodel -lprotobuf
 endif
