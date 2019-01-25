@@ -1,10 +1,10 @@
 PWD := $(shell pwd)
 
 #Please set your bmiva path.
-BMIVA_DIR := $(shell readlink -f ${PWD}/../../../../../../../BM1880-BIRD/bm1880-system-sdk/middleware)
+BMIVA_DIR := /home/hinton/workspace/github-workspace/1880sdk/bm1880-system-sdk/middleware
 #
-CXX = aarch64-linux-gnu-g++
-#CXX := $(shell readlink -f $(PWD)/../../../gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-g++)
+#CXX = aarch64-linux-gnu-g++
+CXX := /data/release/toolchains/gcc/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-g++
 PROM := face_register
 DEPS := $(shell find ./ -name "*.h")
 SRC := $(shell find ./ -name "*.cc")
