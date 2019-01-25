@@ -93,7 +93,7 @@ def start():
     def serve_static(path):
         return flask.send_from_directory('static', path)
 
-    app.run(host='192.168.1.102', port=9555)
+    app.run(host='192.168.1.100', port=9555)
 
 if __name__=="__main__":
     start()
