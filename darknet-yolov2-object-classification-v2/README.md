@@ -5,8 +5,8 @@ Following steps show you how to setup it.
 # USB Mode:
 
 ### Hardware requirements:
-1. bitmain bm1880 edge development board(EDB). [Buy one](https://sophon.cn/product/introduce/edb.html)
-2. or bitmain bm1880 neural network stick(NNS). [By one](https://sophon.cn/product/introduce/nns.html)
+1. bitmain bm1880 edge development board(EDB). *[Buy one]*(https://sophon.cn/product/introduce/edb.html)
+2. or bitmain bm1880 neural network stick(NNS). *[Buy one]*(https://sophon.cn/product/introduce/nns.html)
 3. ubuntu16.04 x86_64 PC
 4. detailed infomation please visit 
 ```bash
