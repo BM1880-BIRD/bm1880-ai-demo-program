@@ -44,4 +44,4 @@ make
 cd ..
 ./demo.sh image/
 ```
-Before run the command ./demo.sh image/, make sure the /dev/ttyACM0 recognized in your shell on ubuntu pc.
+Before run the command **./demo.sh image/**, make sure the **/dev/ttyACM0** recognized in your shell on ubuntu pc.
