@@ -13,6 +13,8 @@ following steps show you how to setup it.
 https://sophon-edge.gitbook.io/project/overview/edge-tpu-developer-board
 https://sophon-edge.gitbook.io/project/overview/neural-network-stick
 ```
+
+### Software requirments:
 and then,
 1. Get the reference code bmnnsdk usb mode
 ```bash
