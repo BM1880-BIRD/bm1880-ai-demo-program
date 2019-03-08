@@ -1,12 +1,12 @@
 ## This object classificaiton demo base on yolov2 and yolo3
 
-following steps show you how to setup it.
+Following steps show you how to setup it.
 
 # USB Mode:
 
-### Hareware requirments:
-1. bitmain bm1880 edge development board(EDB)
-2. or bitmain bm1880 neural network stick(NNS)
+### Hardware requirements:
+1. bitmain bm1880 edge development board(EDB). [Buy one](https://sophon.cn/product/introduce/edb.html)
+2. or bitmain bm1880 neural network stick(NNS). [By one](https://sophon.cn/product/introduce/nns.html)
 3. ubuntu16.04 x86_64 PC
 4. detailed infomation please visit 
 ```bash
@@ -14,8 +14,8 @@ https://sophon-edge.gitbook.io/project/overview/edge-tpu-developer-board
 https://sophon-edge.gitbook.io/project/overview/neural-network-stick
 ```
 
-### Software requirments:
-and then,
+### Software requirements:
+And then,
 1. Get the reference code bmnnsdk usb mode
 ```bash
 git clone https://github.com/BM1880-BIRD/bm1880-bmnnsdk-usb.git
@@ -44,4 +44,4 @@ make
 cd ..
 ./demo.sh image/
 ```
-    Before run the command ./demo.sh image/, make sure the /dev/ttyACM0 recognized in your shell on ubuntu pc.
+Before run the command ./demo.sh image/, make sure the /dev/ttyACM0 recognized in your shell on ubuntu pc.
