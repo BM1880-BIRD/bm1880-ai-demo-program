@@ -16,6 +16,7 @@ https://sophon-edge.gitbook.io/project/overview/neural-network-stick
 
 ### Software requirements:
 And then,
+
 0. Install the useful packages
 ```bash
 $ sudo apt-get install libgoogle-glog-dev libboost-all-dev libprotobuf-dev libusb-1.0-0-dev
@@ -33,20 +34,20 @@ $ sudo ./install.sh
 
 4. Get this demo source code
 ```bash
-git clone https://github.com/BM1880-BIRD/bm1880-ai-demo-program.git
+$ git clone https://github.com/BM1880-BIRD/bm1880-ai-demo-program.git
 ```
 5. build demo code
 ```bash
-cd bm1880-ai-demo-program/darknet-yolov2-object-classification-v2
-gedit ./darknet/Makefile	//modify the version number to the one you installed above
+$ cd bm1880-ai-demo-program/darknet-yolov2-object-classification-v2
+$ gedit ./darknet/Makefile	//modify the version number to the one you installed above
 ```
 	LDFLAGS+= -L/opt/bmtap2/bm1880-usb_1.0.3.3/lib/usb -lbmutils -lbmruntime -lbmodel -lbmkernel -lglog -lstdc++
 	COMMON= -Iinclude/ -Isrc/
 	COMMON += -I/opt/bmtap2/bm1880-usb_1.0.3.3/include
 ```bash
-cd darknet
-make
-cd ..
-./demo.sh image/
+$ cd darknet
+$ make
+$ cd ..
+$ ./demo.sh image/
 ```
 Before run the command **./demo.sh image/**, make sure the **/dev/ttyACM0** recognized in your shell on ubuntu pc.
