@@ -16,21 +16,26 @@ https://sophon-edge.gitbook.io/project/overview/neural-network-stick
 
 ### Software requirements:
 And then,
+0. Install the useful packages
+```bash
+$ sudo apt-get install libgoogle-glog-dev libboost-all-dev libprotobuf-dev libusb-1.0-0-dev
+```
 1. Get the reference code bmnnsdk usb mode
 ```bash
-git clone https://github.com/BM1880-BIRD/bm1880-bmnnsdk-usb.git
+$ git clone https://github.com/BM1880-BIRD/bm1880-bmnnsdk-usb.git
 ```
 2. Install the bmnnsdk usb mode
 ```bash
-cd bm1880-bmnnsdk-usb/bmtap2-bm1880-usb_x.y.z.q		//by the version number, such as 1.0.3.3	
-sudo ./install.sh
+$ cd bm1880-bmnnsdk-usb/bmtap2-bm1880-usb_x.y.z.q		//by the version number, such as 1.0.3.3	
+$ sudo ./install.sh
 ```
+3. Install OpenCV(prefer 3.4), Please visit https://developer.sophon.cn/thread/108.html
 
-3. Get this demo source code
+4. Get this demo source code
 ```bash
 git clone https://github.com/BM1880-BIRD/bm1880-ai-demo-program.git
 ```
-4. build demo code
+5. build demo code
 ```bash
 cd bm1880-ai-demo-program/darknet-yolov2-object-classification-v2
 gedit ./darknet/Makefile	//modify the version number to the one you installed above
