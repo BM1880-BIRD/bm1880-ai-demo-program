@@ -1,0 +1,8 @@
+#!/bin/sh
+
+cd /system/data
+./load_jpu.sh
+insmod bmnpu.ko
+mdev -s
+cd /bin
+/bin/ipc_face_detector /dev/ttyGS0 > /dev/ttyS0&

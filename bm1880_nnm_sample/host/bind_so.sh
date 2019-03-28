@@ -1,0 +1,1 @@
+mount /home/libbtmain.so /usr/lib/libbtmain.so --bind
