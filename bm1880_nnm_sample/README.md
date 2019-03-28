@@ -1,6 +1,6 @@
 # ARM host + bm1880 nnm Samples
 
-###Get Code
+### Get Code
 
 ```bash
 $ mkdir bm1880_nnm && cd bm1880 _nnm
@@ -63,8 +63,13 @@ install/soc_bm1880_asic_nnm/
 │   ├── fip.bin
 │   ├── prg.bin
 │   ├── ramboot_mini.itb
+```
 
 ##### Download eMMC boot Image for NNM:
 
 https://sophon-edge.gitbook.io/project/overview/edge-tpu-developer-board#emmc-boot
+
+
+## build samples for ARM host
+copy host folder to the arm host environment to build and run 
 
