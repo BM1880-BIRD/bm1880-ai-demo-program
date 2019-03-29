@@ -72,4 +72,9 @@ https://sophon-edge.gitbook.io/project/overview/edge-tpu-developer-board#emmc-bo
 
 ## build samples for ARM host
 copy host folder to the arm host environment to build and run 
+    please pay attention，the linux kernel of arm host need enable the 
+    CONFIG_USB_ACM=y
+
+and then, the bm1880 nnm can be detected as the device named /dev/ttyACM0 on your ARM linux host,and the arm linux host can be detected as the device named /dev/ttyGS0 on bm1880 nnm.
+
 
