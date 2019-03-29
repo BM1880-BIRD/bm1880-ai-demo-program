@@ -3,13 +3,13 @@
 ### Get Code
 
 ```bash
-$ mkdir bm1880_nnm && cd bm1880 _nnm
+$ mkdir bm1880_nnm && cd bm1880_nnm
 $ git clone https://github.com/BM1880-BIRD/bm1880-ai-demo-program.git
 $ git clone https://github.com/BM1880-BIRD/bm1880-system-sdk.git
 ```
 
 
-#### Get cross-compile toolchains:
+### Get cross-compile toolchains:
 
 ```bash
 $ mkdir -p ./bm1880-system-sdk/host-tools/gcc && cd ./bm1880-system-sdk/host-tools/gcc
@@ -49,7 +49,7 @@ $ clean_all && build_all
 
 ```
 
-#### Build output:
+### Build output:
 ```bash
 $ tree -L 2 install/soc_bm1880_asic_nnm/
 install/soc_bm1880_asic_nnm/
@@ -65,16 +65,17 @@ install/soc_bm1880_asic_nnm/
 │   ├── ramboot_mini.itb
 ```
 
-##### Download eMMC boot Image for NNM:
+### Download eMMC boot Image for NNM:
 
 https://sophon-edge.gitbook.io/project/overview/edge-tpu-developer-board#emmc-boot
 
 
-## build samples for ARM host
-copy host folder to the arm host environment to build and run 
+### build samples for ARM host
+copy host folder to the arm host environment to build and run
+```bash 
     please pay attention，the linux kernel of arm host need enable the 
     CONFIG_USB_ACM=y
-
-and then, the bm1880 nnm can be detected as the device named /dev/ttyACM0 on your ARM linux host,and the arm linux host can be detected as the device named /dev/ttyGS0 on bm1880 nnm.
+```
+and then, the bm1880 nnm can be detected as the device named ** /dev/ttyACM0 ** on your ARM linux host,and the arm linux host can be detected as the device named ** /dev/ttyGS0 ** on bm1880 nnm.
 
 
