@@ -1,8 +1,11 @@
 GPU=0
 CUDNN=0
-OPENCV=1
+OPENCV=0
 OPENMP=0
 DEBUG=0
+
+BM1880_CROSS_TOOLCHAIN_PATH=/data/release/toolchains/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin
+BM1880_SYSTEM_SDK_PATH=/home/hinton/workspace/temp/bm1880/bm1880-system-sdk
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
@@ -19,15 +22,15 @@ ALIB=libdarknet.a
 EXEC=darknet
 OBJDIR=./obj/
 
-CC=gcc
+CC=$(BM1880_CROSS_TOOLCHAIN_PATH)/aarch64-linux-gnu-gcc
 NVCC=nvcc 
-AR=ar
+AR=$(BM1880_CROSS_TOOLCHAIN_PATH)/aarch64-linux-gnu-ar
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread
-LDFLAGS+= -L/opt/bmtap2/bm1880-usb_1.0.3.3/lib/usb -lbmutils -lbmruntime -lbmodel -lbmkernel -lglog -lstdc++
+LDFLAGS+= -L$(BM1880_SYSTEM_SDK_PATH)/middleware/lib -lbmutils -lbmruntime -lbmodel -lbmkernel -lglog -lstdc++ -lprotobuf
 COMMON= -Iinclude/ -Isrc/
-COMMON += -I/opt/bmtap2/bm1880-usb_1.0.3.3/include
+COMMON += -I$(BM1880_SYSTEM_SDK_PATH)/middleware/include
 CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
 ifeq ($(OPENMP), 1) 
