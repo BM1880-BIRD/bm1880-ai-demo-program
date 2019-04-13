@@ -95,7 +95,7 @@ $ make
 ```
 now, you can copy this folder darknet-yolov2-object-classification-v2 to the rootfs of EDB or NNM if the demo code build succesfully
 
-and the in the linux shell of EDB or NNM, you can run this demo program by following commands:
+and then, you can run this demo program by following commands in the linux shell of EDB or NNM:
 ```bash
 $ cd /system/data && ./load_driver.sh
 $ ldconfig
