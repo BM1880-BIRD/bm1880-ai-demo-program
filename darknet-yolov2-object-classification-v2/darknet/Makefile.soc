@@ -4,8 +4,8 @@ OPENCV=0
 OPENMP=0
 DEBUG=0
 
-BM1880_CROSS_TOOLCHAIN_PATH=/data/release/toolchains/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin
-BM1880_SYSTEM_SDK_PATH=/home/hinton/workspace/temp/bm1880/bm1880-system-sdk
+BM1880_CROSS_TOOLCHAIN_PATH=`pwd`/../../../bm1880-system-sdk/host-tools/gcc/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin
+BM1880_SYSTEM_SDK_PATH=`pwd`/../../../bm1880-system-sdk
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
