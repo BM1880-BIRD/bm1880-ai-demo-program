@@ -101,6 +101,7 @@ $ cd /system/data && ./load_driver.sh
 $ ldconfig
 $ cd darknet-yolov2-object-classification-v2  
 $ ./demo.sh image/
+```
 
 you will see the results like this:
 ```bash
