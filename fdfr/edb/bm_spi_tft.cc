@@ -88,6 +88,125 @@ static void TftSt7789vWritedata(uint8_t u1Data)
 	BmSpiSenddata(u1Data);
 }
 
+#define LcdWritecomm TftSt7789vWritecomm
+#define LcdWritedata TftSt7789vWritedata
+#define LCD_RESET_GPIO TFT_RESET_GPIO
+
+
+static void LcdIli9341Init(void)
+{
+	//cout << __FUNCTION__ << " , " << __LINE__ << endl;
+	BmGpioSetValue(LCD_RESET_GPIO, 1); //RESET=1
+	usleep(200000);
+	BmGpioSetValue(LCD_RESET_GPIO, 0); //RESET=0
+	usleep(800000);
+	BmGpioSetValue(LCD_RESET_GPIO, 1); //RESET=1
+	usleep(800000);
+
+	LcdWritecomm(0xCF);
+	LcdWritedata(0x00);
+	LcdWritedata(0xC1);
+	LcdWritedata(0x30);
+
+	LcdWritecomm(0xED);
+	LcdWritedata(0x64);
+	LcdWritedata(0x03);
+	LcdWritedata(0x12);
+	LcdWritedata(0x81);
+
+	LcdWritecomm(0xE8);
+	LcdWritedata(0x85);
+	LcdWritedata(0x00);
+	LcdWritedata(0x7A);
+
+	LcdWritecomm(0xCB);
+	LcdWritedata(0x39);
+	LcdWritedata(0x2C);
+	LcdWritedata(0x00);
+	LcdWritedata(0x34);
+	LcdWritedata(0x02);
+
+	LcdWritecomm(0xF7);
+	LcdWritedata(0x20);
+
+	LcdWritecomm(0xEA);
+	LcdWritedata(0x00);
+	LcdWritedata(0x00);
+
+	LcdWritecomm(0xc0);
+	LcdWritedata(0x21);
+
+	LcdWritecomm(0xc1);
+	LcdWritedata(0x11);
+
+	LcdWritecomm(0xc5);
+	LcdWritedata(0x25);
+	LcdWritedata(0x32);
+
+	LcdWritecomm(0xc7);
+	LcdWritedata(0xaa);
+
+	LcdWritecomm(0x36);
+	//LcdWritedata(0x08);
+	LcdWritedata((1<<5)|(0<<6)|(1<<7)|(1<<3));
+
+	LcdWritecomm(0xb6);
+	LcdWritedata(0x0a);
+	LcdWritedata(0xA2);
+
+	LcdWritecomm(0xb1);
+	LcdWritedata(0x00);
+	LcdWritedata(0x1B);
+
+	LcdWritecomm(0xf2);
+	LcdWritedata(0x00);
+
+	LcdWritecomm(0x26);
+	LcdWritedata(0x01);
+
+	LcdWritecomm(0x3a);
+	LcdWritedata(0x55);
+
+	LcdWritecomm(0xE0);
+	LcdWritedata(0x0f);
+	LcdWritedata(0x2D);
+	LcdWritedata(0x0e);
+	LcdWritedata(0x08);
+	LcdWritedata(0x12);
+	LcdWritedata(0x0a);
+	LcdWritedata(0x3d);
+	LcdWritedata(0x95);
+	LcdWritedata(0x31);
+	LcdWritedata(0x04);
+	LcdWritedata(0x10);
+	LcdWritedata(0x09);
+	LcdWritedata(0x09);
+	LcdWritedata(0x0d);
+	LcdWritedata(0x00);
+
+	LcdWritecomm(0xE1);
+	LcdWritedata(0x00);
+	LcdWritedata(0x12);
+	LcdWritedata(0x17);
+	LcdWritedata(0x03);
+	LcdWritedata(0x0d);
+	LcdWritedata(0x05);
+	LcdWritedata(0x2c);
+	LcdWritedata(0x44);
+	LcdWritedata(0x41);
+	LcdWritedata(0x05);
+	LcdWritedata(0x0f);
+	LcdWritedata(0x0a);
+	LcdWritedata(0x30);
+	LcdWritedata(0x32);
+	LcdWritedata(0x0F);
+
+	LcdWritecomm(0x11);
+	usleep(120000);
+
+	LcdWritecomm(0x29);
+}
+
 static void TftSt7789vInit(void)
 {
 	BmGpioSetValue(TFT_RESET_GPIO,1); //RESET=1
@@ -277,7 +396,15 @@ static void BmTftDisplayPicture(uint8_t *picture)
 	{
 		perror("can't set bits per word");
 	}
+	#if 1
+	for (i=0; i< (320*240*2)/4096; i++) {
+		write(fd_spidev, (p + i*4096), 4096);
+	}
+	write(fd_spidev, (p + i*4096), (320*240*2)%4096);
+	#else
 	write(fd_spidev, p, (320*240*2));
+	#endif
+
 	#endif
 }
 
@@ -339,7 +466,8 @@ int BmTftInit(void)
 	//LOG(LOG_DEBUG_NORMAL,cout<<"bits per word: "<<bits<<endl);
 	LOG(LOG_DEBUG_NORMAL,cout<<"max speed:"<<speed<<"Hz "<<"\"("<<(speed/1000)<<" KHz)\""<<endl);
 	
-	TftSt7789vInit();
+	//TftSt7789vInit();
+	LcdIli9341Init();
 	//DispBand();
 
 	//BmTftDisplayPicture((uint8_t *)logo_hex_16);
@@ -411,10 +539,38 @@ void* BmTftThread(void *arg)
 	}
 }
 
+#define LCD_C 320
+#define LCD_R 240
 void BmTftAddDisplayFrame(const cv::Mat &frame)
 {
 	cv::Mat img_resize;
+	
+	#if 0
 	cv::resize(frame, img_resize,  Size(320, 240) );
+	#else
+	cv::Mat tmp,img_tmp(LCD_R, LCD_C, CV_8UC3,Scalar(0,0,0));
+	int x = LCD_C;
+	int y = LCD_R;
+	int scale_c = (frame.cols/32);
+	int scale_r = (frame.rows/24);
+	if(scale_c > scale_r)
+	{
+		//x = LCD_C;
+		y = (frame.rows*10/scale_c);
+	}
+	else
+	{
+		x = (frame.cols*10/scale_r);
+		//y = LCD_R;
+	}
+	cv::resize(frame, tmp,  Size(x, y) );
+	//cout<<"imageResize size : cols = "<<tmp.cols<<", rows = "<<tmp.rows<<endl;
+	cv::Mat imageROI = img_tmp(cv::Rect((320 - tmp.cols)/2,(240 - tmp.rows)/2,tmp.cols,tmp.rows));
+	tmp.copyTo(imageROI);
+	img_resize = img_tmp;
+	#endif
+	
+	
 	std::lock_guard<std::mutex> locker(tft_lock_);
 	tft_imagebuffer.push(img_resize);
 	if (tft_imagebuffer.size() > 3)
