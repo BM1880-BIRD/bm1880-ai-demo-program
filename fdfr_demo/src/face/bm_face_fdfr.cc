@@ -76,8 +76,8 @@ string person_name ="";
 
 vector<vector<string>> detector_models = {
 	{//FD_TINYSSH
-		"/system/data/bmodel/Face/Detection/Tiny_SSH/320x320/tiny_ssh.bmodel",
-		"/system/data/bmodel/Face/Detection/Tiny_SSH/320x320/det3.bmodel",
+		"/system/data/bmodel/tiny_ssh.bmodel",
+		"/system/data/bmodel/det3.bmodel",
 	},
 	{//FD_MTCNN
 		"",
