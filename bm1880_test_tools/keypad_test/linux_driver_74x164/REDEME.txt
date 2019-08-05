@@ -1,0 +1,15 @@
+linux-linaro-stable/arch/arm64/configs/bitmain_bm1880_asic_zkt_defconfig
+
++CONFIG_INPUT_EVDEV=y
++#CONFIG_INPUT_EVBUG=y
+
+
+
+
+linux-linaro-stable/arch/arm64/boot/dts/bitmain/bm1880_asic_zkt.dts
+
++       gpio-keys {
++               compatible = "bm1880-keypad-74x164";
++       };
++
++
