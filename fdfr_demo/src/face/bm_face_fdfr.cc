@@ -70,8 +70,6 @@ pthread_t bmpic_record_tid;
 //threshold
 double sim_threshold = 0.6;
 
-int do_face_reg = 0;
-
 string person_name ="";
 
 vector<vector<string>> detector_models = {

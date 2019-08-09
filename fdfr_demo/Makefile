@@ -56,6 +56,7 @@ LIBS += -lbmjpulite
 LIBS += -lbmjpuapi 
 LIBS += -lbmodel 
 LIBS += -lbmutils
+LIBS += ./src/face/bm_face_anti_spoofing.a
 #
 
 #

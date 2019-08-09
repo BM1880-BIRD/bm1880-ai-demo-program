@@ -64,7 +64,7 @@ typedef struct diag_cli_cmd {
   int (*func)(int argc, char *argv[]);
 }DIAG_CLI_CMD_T;
 
-#define BM1880_EDB_ENV_FILE "bm1880_env.conf"
+#define BM1880_EDB_ENV_FILE "fdfr_demo_env.conf"
 
 typedef struct __bm1880_env
 {

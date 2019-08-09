@@ -152,7 +152,7 @@ void BmCliInit(void)
 void BmCliMain(int argc, char *argv[])
 {
 	int i;
-	//system("stty erase ^H");
+	system("stty erase ^H");
 
 	if((argc !=0) && !strcmp(argv[0], "exit")){
 		cout<<endl;
