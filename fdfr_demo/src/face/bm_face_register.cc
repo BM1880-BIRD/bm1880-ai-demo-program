@@ -39,91 +39,11 @@ using namespace qnn::utils;
 
 #include "bm_common_config.h"
 #include "bm_face.h"
+#include "bm_camera.h"
 
 
-Repository repo("/system/data/repository");
+Repository bm_repo("/system/data/bm_repository");
 
-#if 0
-vector<vector<shared_ptr<face::quality::QualityChecker>>> quality_checkers;
-
-static bool InitFaceCheckersFromConfig(const ConfigFile &config)
-{
-    size_t checker_count = config.require<size_t>("face_checker_count");
-    vector<vector<string>> checkers(checker_count);
-    set<string> subjects;
-
-    for (size_t i = 0; i < checker_count; i++) {
-        checkers[i] = config.require<vector<string>>("face_checker_" + to_string(i), "subjects");
-        for (auto &subject : checkers[i]) {
-            subjects.insert(subject);
-        }
-    }
-
-    quality_checkers.clear();
-    quality_checkers.resize(checker_count);
-
-    for (size_t i = 0; i < checker_count; i++) {
-        vector<shared_ptr<face::quality::QualityChecker>> checker;
-        string section_name = "face_checker_" + to_string(i);
-
-        for (auto &subject : checkers[i]) {
-            if (subject == "facepose") {
-                checker.emplace_back(make_shared<face::quality::FaceposeCheck>(config.require<double>(section_name, "facepose_threshold"), facepose));
-            } else if (subject == "face_boundary") {
-                checker.emplace_back(make_shared<face::quality::FaceBoundaryCheck>());
-            } else if (subject == "landmark_boundary") {
-                checker.emplace_back(make_shared<face::quality::LandmarkBoundaryCheck>());
-            } else if (subject == "skin_area") {
-                checker.emplace_back(make_shared<face::quality::SkinAreaCheck>(config.require<double>(section_name, "skin_area_threshold")));
-            } else if (subject == "clarity") {
-                checker.emplace_back(make_shared<face::quality::FaceClarityCheck>(config.require<double>(section_name, "clarity_threshold")));
-            } else if (subject == "resolution") {
-                checker.emplace_back(make_shared<face::quality::FaceResolutionCheck>(config.require<size_t>(section_name, "resolution_threshold")));
-            } else if (subject == "antispoofing") {
-                checker.emplace_back(make_shared<face::quality::AntiSpoofingCheck>(antispoofing));
-            } else {
-                fprintf(stderr, "\"%s\" is not a supported face quality checker.\n", subject.data());
-                return false;
-            }
-        }
-
-        quality_checkers[i] = move(checker);
-    }
-
-    return true;
-}
-
-
-int BmFaceQualityCheck(bmlib_handle_t handle, cv::Mat &full_image, const bm_face_info_t *face_info, int checker_id, int *result)
-{
-    bm_face_context_t *ctx = static_cast<bm_face_context_t*>(handle);
-    image_t &img = *((image_t*)(image->internal_data));
-    qnn::vision::face_info_t face;
-    //convert_face(face, face_info);
-    cv::Mat full_image = img;
-    cv::Mat face_image;
-    try {
-        face_image = full_image(cv::Range(std::max<int>(0, face.bbox.y1), std::min<int>(face.bbox.y2, full_image.size[0] - 1)),
-                                cv::Range(std::max<int>(0, face.bbox.x1), std::min<int>(face.bbox.x2, full_image.size[1] - 1)));
-    } catch (cv::Exception &e) {
-        return -1;
-    }
-
-    if (checker_id < 0 || ctx->checkers.size() <= checker_id) {
-        return -1;
-    }
-
-    *result = 0;
-    for (auto &checker : ctx->checkers[checker_id]) {
-        if (!checker->check(full_image, face_image, face)) {
-            *result = 1 << checker->code();
-            break;
-        }
-    }
-
-    return 0;
-}
-#endif
 
 bool StrCmpIgnoreCases(const string &a, const string &b) {
 	int i,j;
@@ -166,23 +86,75 @@ string  BmGetRegisterName(const char *p_name)
 }
 
 
-int BmFaceAddIdentity(int mode, string &source_path, size_t face_id)
+int _BmFaceAddIdentity(cv::Mat &frame, string &name, size_t id = 0, repo_opts mode = REPO_ADD);
+
+int _BmFaceAddIdentity(cv::Mat &frame, string &name, size_t id , repo_opts mode)
 {
-	FDFR fdfr(fd_algo, detector_models[fd_algo], FR_BMFACE, extractor_models[0]);
+	vector<face_info_t> faceInfo;
+	vector<face_features_t> features_list;
+	if(BmFaceSetupFdFrModel() != 0)
+		return -1;
+
+	bm_fdfr->detect(frame,faceInfo);
+
+	std::sort(faceInfo.begin(), faceInfo.end(), [](face_info_t &a, face_info_t &b) {
+		return (a.bbox.x2 - a.bbox.x1 + 1) * (a.bbox.y2 - a.bbox.y1 + 1)
+				> (b.bbox.x2 - b.bbox.x1 + 1) * (b.bbox.y2 - b.bbox.y1 + 1);
+	});
+	printf("\ndetect %d faces\n", int(faceInfo.size()));
+
+	#if 1
+	float x1 = faceInfo[0].bbox.x1;
+	float y1 = faceInfo[0].bbox.y1;
+	float x2 = faceInfo[0].bbox.x2;
+	float y2 = faceInfo[0].bbox.y2;
+	cv::Mat cropped_img = frame(cv::Range(std::max<int>(0, y1), std::min<int>(y2, frame.size[0] - 1)),
+                                                cv::Range(std::max<int>(0, x1), std::min<int>(x2, frame.size[1] - 1)));
+	if (BmFaceFacePoseCheck(cropped_img) == -1) {
+		return -1;
+	}
+	#endif
+
+	bm_fdfr->extract(frame,faceInfo,features_list);
+	uint32_t face_id = 0;
+	if (mode == REPO_ADD) {
+		face_id = bm_repo.add(name, features_list[0].face_feature.features);
+	}else if (mode == REPO_UPDATE) {
+		face_id = id;
+		bm_repo.set(face_id, name, features_list[0].face_feature.features);
+	}
+	BM_FACE_LOG(LOG_DEBUG_NORMAL, cout << "Repo size: " << bm_repo.id_list().size() << endl);
+
+	#if 1
+	cv::rectangle(frame, cv::Point(x1, y1),	cv::Point(x2, y2), cv::Scalar(0, 0, 255), 3, 8, 0);
+	#endif
+
+	return face_id;
+}
+
+int BmFaceAddIdentity(cv::Mat &frame, string &name)
+{
+	return _BmFaceAddIdentity(frame, name);
+}
+
+int BmFaceUpdateIdentity(cv::Mat &frame, string &name, size_t id)
+{
+	return _BmFaceAddIdentity(frame, name, id, REPO_UPDATE);
+}
 
 
+int BmFaceRegister(int src_mode, string &source_path, size_t face_id)
+{
 	vector<string> all_files;
-	if (mode == 1) {
+	if (src_mode == BM_FACE_REG_USE_PICTURE) {
 		all_files.emplace_back(source_path);
 	}
-	else if(mode == 2) {
+	else if(src_mode == BM_FACE_REG_USE_FOLDER) {
 		BmListAllFiles(source_path, all_files);
 	}
 
 	for(int i; i < all_files.size(); i++) {
 		cv::Mat frame;
-		vector<fd_result_t> results;
-		vector<face_features_t> features_list;
 
 		BM_FACE_LOG(LOG_DEBUG_NORMAL, cout << all_files[i] << " is a file." << endl);
 
@@ -195,24 +167,14 @@ int BmFaceAddIdentity(int mode, string &source_path, size_t face_id)
 		if (StrCmpIgnoreCases(suffixStr,"jpg") || StrCmpIgnoreCases(suffixStr,"jpeg")
 				|| StrCmpIgnoreCases(suffixStr,"png") || StrCmpIgnoreCases(suffixStr,"bmp")) {
 			frame = cv::imread(all_files[i]);
-			fdfr.detect(frame,results);
-			fdfr.extract(frame,results,features_list);
-			if (features_list.size() == 1) {
-				string reg_name = BmGetRegisterName((all_files[i].substr(all_files[i].find_last_of('/')+1)).c_str());
-				if(mode == 3)
-				{
-					if(face_id <= 0)
-						return -1;
-					repo.set(face_id, reg_name, features_list[0].face_feature.features);
-				}
-				else
-				{
-					uint32_t id = repo.add(reg_name, features_list[0].face_feature.features);
-					BM_FACE_LOG(LOG_DEBUG_NORMAL, cout << "Add face identity, "<< reg_name << ", id = "<< dec << id << endl);
-				}
+
+			string reg_name = BmGetRegisterName((all_files[i].substr(all_files[i].find_last_of('/')+1)).c_str());
+			if (face_id == 0){
+				BmFaceAddIdentity(frame, reg_name);
 			} else {
-				BM_FACE_LOG(LOG_DEBUG_ERROR, cout << "Reject: This pic has "<< dec << features_list.size() << "faces!"<< endl);
+				BmFaceUpdateIdentity(frame, reg_name, face_id);
 			}
+
 		}
 	}
 	return 0;
@@ -222,33 +184,79 @@ int BmFaceAddIdentity(int mode, string &source_path, size_t face_id)
 int BmFaceShowRepoList(void)
 {
 	std::vector<size_t> id_table;
-	id_table = repo.id_list();
+	id_table = bm_repo.id_list();
 
 	cout << "repo size = " << id_table.size() << endl;
 	for (int i=0; i < id_table.size() ; i++) {
 		size_t id = id_table[i];
-		cout << "id = " << id << " , name = " << repo.get_name(id).value_or("").data() << endl;
+		cout << "id = " << id << " , name = " << bm_repo.get_name(id).value_or("") << endl;
 	}
 
 	return 0;
 }
 
-
-int BmFaceUpdateIdentity(string &source_path, const size_t id)
-{
-	return BmFaceAddIdentity(3, source_path, id);
-}
-
 int BmFaceRemoveIdentity(const size_t id)
 {
-	repo.remove(id);
+	bm_repo.remove(id);
 	return 0;
 }
 
 int BmFaceRemoveAllIdentities(void)
 {
-	repo.remove_all();
+	bm_repo.remove_all();
 	return 0;
 }
+
+int CliCmdDoFaceRegister(int argc,char *argv[])
+{
+	string face_reg_name;
+	if (argc == 1) {
+		cout<<"Usage: facereg [name]"<<endl;
+		return 0;
+	} else if(argc == 2) {
+		if (bmface_tid) {
+			cout<<"Please stop camera first!"<<endl;
+			return 0;
+		}
+		if (bm_testframe.empty()) {
+			cout << "Please get frame first." << endl;
+			return 0;
+		}
+
+		face_reg_name = argv[1];
+		BmFaceAddIdentity(bm_testframe, face_reg_name);
+		BmFaceDisplay(bm_testframe);
+	}
+	return 0;
+}
+
+
+int CliCmdRepoManage(int argc,char *argv[])
+{
+	if (argc == 1) {
+		cout<<"Usage: repo [list/delete/deleteall]"<<endl;
+		return 0;
+	} else if (argc == 2) {
+		if (!strcmp(argv[1],"list")) {
+			BmFaceShowRepoList();
+		} else if (!strcmp(argv[1],"deleteall")) {
+			BmFaceRemoveAllIdentities();
+		}
+	} else if (argc == 3) {
+		if (!strcmp(argv[1],"delete")) {
+			int face_id = atoi(argv[2]);
+			if (face_id > bm_repo.id_list().size()) {
+				cout << "Invalid face id: " << face_id << endl;
+				return -1;
+			}
+			BmFaceRemoveIdentity(face_id);
+		}
+	}
+	return 0;
+}
+
+
+
+
 
 

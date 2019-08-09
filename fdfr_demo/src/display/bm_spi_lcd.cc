@@ -601,9 +601,9 @@ void BmLcdDisplayFrame(const cv::Mat &frame)
 void BmLcdAddDisplayFrame(const cv::Mat &frame)
 {
 	cv::Mat img_resize;
-	if(edb_config.lcd_resize_type == 0) {
+	if(bm1880_config.lcd_resize_type == 0) {
 		cv::resize(frame, img_resize, Size(320, 240) );
-	} else if (edb_config.lcd_resize_type == 1) {
+	} else if (bm1880_config.lcd_resize_type == 1) {
 		cv::Mat tmp,img_tmp(LCD_R, LCD_C, CV_8UC3,Scalar(0,0,0));
 		int x = LCD_C;
 		int y = LCD_R;
@@ -645,11 +645,11 @@ int CliCmdEnableLcd(int argc, char *argv[])
 	{
 		if((!strcmp(argv[1],"enable")))
 		{
-			edb_config.lcd_display = true;
+			bm1880_config.lcd_display = true;
 		    BmLcdInit();
 			BmLcdDisplayPicture(logo_hex_8);
 
-			cout << "lcd_display : " << edb_config.lcd_display << endl;
+			cout << "lcd_display : " << bm1880_config.lcd_display << endl;
 			//return 0;
 		}
 		if((!strcmp(argv[2],"speed")))

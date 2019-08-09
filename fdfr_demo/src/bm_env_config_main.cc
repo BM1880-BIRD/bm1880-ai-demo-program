@@ -37,7 +37,7 @@ bool performace_test = true;
 bool performace_test = false;
 #endif
 
-EDB_ENV_CONFIG_T edb_config;
+BM1880_ENV_CONFIG_T bm1880_config;
 
 //Show Welcome message.
 #define SHOW_WELLCOM()\
@@ -52,10 +52,6 @@ do\
 	cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;\
 }while(0)
 
-void BmfaceDoFaceSpoofing(int mode,string &source_path)
-{
-	;
-}
 string GetSystemTime(void)
 {
 	time_t timep;
@@ -225,9 +221,10 @@ int read_conf_value(const char *key, char *value,const char *file)
 
 	return 0;
 }
+#if 0
 int write_conf_value(const char *key,char *value,const char *file)
 {
-	CONFIG_ITEM_T items[20];
+	CONFIG_ITEM_T items[100];
 	int num;
 	file_to_items(file, items, &num);
 
@@ -252,36 +249,90 @@ int write_conf_value(const char *key,char *value,const char *file)
 	fclose(fp);
 	return 0;
 }
-
+#endif
 
 #define PRINT_CONFIG(A, B)  << #A<<"."<<#B << " = " << A.B << endl
-void BmPrintEdbEnvConfig(void)
+void BmFdFrDemoPrintEnvConfig(void)
 {
 	BM_LOG(LOG_DEBUG_NORMAL, cout
 	<< "-------------------------EdbEnvConfig-------------------------" << endl
-	PRINT_CONFIG(edb_config, host_ip_addr)
-	PRINT_CONFIG(edb_config, host_port)
-	PRINT_CONFIG(edb_config, lcd_display)
-	PRINT_CONFIG(edb_config, record_path)
-	PRINT_CONFIG(edb_config, record_image)
-	PRINT_CONFIG(edb_config, fd_only_maximum)
-	PRINT_CONFIG(edb_config, do_fr)
-	PRINT_CONFIG(edb_config, do_facepose)
-	PRINT_CONFIG(edb_config, camera_type)
-	PRINT_CONFIG(edb_config, camera_capture_mode)
-	PRINT_CONFIG(edb_config, load_pic_path)
-	PRINT_CONFIG(edb_config, step)
+	PRINT_CONFIG(bm1880_config, host_ip_addr)
+	PRINT_CONFIG(bm1880_config, host_port)
+	PRINT_CONFIG(bm1880_config, lcd_display)
+	PRINT_CONFIG(bm1880_config, record_path)
+	PRINT_CONFIG(bm1880_config, record_image)
+	PRINT_CONFIG(bm1880_config, fd_algo)
+	PRINT_CONFIG(bm1880_config, fd_only_maximum)
+	PRINT_CONFIG(bm1880_config, do_fr)
+	PRINT_CONFIG(bm1880_config, do_facepose)
+	PRINT_CONFIG(bm1880_config, frame_source)
+	PRINT_CONFIG(bm1880_config, camera_id)
+	PRINT_CONFIG(bm1880_config, camera_capture_mode)
+	PRINT_CONFIG(bm1880_config, load_pic_path)
+	PRINT_CONFIG(bm1880_config, step)
 	//face spoofing
-	PRINT_CONFIG(edb_config, fs_enable)
-	//PRINT_CONFIG(edb_config, )
+	PRINT_CONFIG(bm1880_config, afs_enable)
+	PRINT_CONFIG(bm1880_config, afs_debug_show_visual)
+	PRINT_CONFIG(bm1880_config, afs_frame_record_path)
+	PRINT_CONFIG(bm1880_config, afs_debug_frame_record_real)
+	PRINT_CONFIG(bm1880_config, afs_debug_frame_record_fake)
+	PRINT_CONFIG(bm1880_config, afs_frame_record_real_prefix)
+	PRINT_CONFIG(bm1880_config, afs_frame_record_fake_prefix)
+	//PRINT_CONFIG(bm1880_config, )
 	<< "-----------------------------End------------------------------" << endl
 	);
 }
+int BmCliCmdPrintCfg(int argc, char *argv[])
+{
+	BmFdFrDemoPrintEnvConfig();
+	return 0;
+}
+
+
+#define SET_CONFIG(A,B,C)\
+	do{\
+		string parm = argv[1];\
+		if (parm == #B) {\
+			A.B = C;\
+			cout << "set " << #A"."#B" = "<< C << endl;\
+		}\
+	}while(0)
+
+int BmCliCmdSetCfg(int argc, char *argv[])
+{
+	if (argc == 1) {
+		cout<<"Usage: setcfg [parm] [value]"<<endl;
+		return 0;
+	} else if(argc == 2) {
+		;
+	} else if(argc == 3) {
+		SET_CONFIG(bm1880_config, host_ip_addr, argv[2]);
+		SET_CONFIG(bm1880_config, host_port, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, lcd_display, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, lcd_resize_type, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, record_path, argv[2]);
+		SET_CONFIG(bm1880_config, record_image, atoi(argv[2]));
+		//SET_CONFIG(bm1880_config, fd_algo, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, fd_only_maximum, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, do_fr, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, do_facepose, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, frame_source, argv[2]);
+		SET_CONFIG(bm1880_config, camera_id, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, camera_capture_mode, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, load_pic_path, argv[2]);
+		SET_CONFIG(bm1880_config, afs_enable, atoi(argv[2]));
+		SET_CONFIG(bm1880_config, afs_debug_show_visual, argv[2]);
+		//SET_CONFIG(bm1880_config, , argv[2]);
+	}
+	return 0;
+}
+
 
 #define READ_CONF(A,B,C) \
 			read_conf_value(#B, s, BM1880_EDB_ENV_FILE);\
 			A.B = C
-void Bm1880DemoEnvSetup(void)
+
+void BmFdFrDemoEnvSetup(void)
 {
 	char s[256];
 
@@ -289,20 +340,47 @@ void Bm1880DemoEnvSetup(void)
 		BM_LOG(LOG_DEBUG_ERROR, cout << "Can't find config file." << endl);
 	} else {
 		//
-		READ_CONF(edb_config, host_ip_addr, s);
-		READ_CONF(edb_config, host_port, atoi(s));
-		READ_CONF(edb_config, lcd_display, atoi(s));
-		READ_CONF(edb_config, lcd_resize_type, atoi(s));
-		READ_CONF(edb_config, record_path, s);
-		READ_CONF(edb_config, record_image, atoi(s));
-		READ_CONF(edb_config, fd_only_maximum, atoi(s));
-		READ_CONF(edb_config, do_fr, atoi(s));
-		READ_CONF(edb_config, do_facepose, atoi(s));
-		READ_CONF(edb_config, camera_type, s);
-		READ_CONF(edb_config, camera_capture_mode , atoi(s));
-		READ_CONF(edb_config, load_pic_path, s);
+		READ_CONF(bm1880_config, host_ip_addr, s);
+		READ_CONF(bm1880_config, host_port, atoi(s));
+		READ_CONF(bm1880_config, lcd_display, atoi(s));
+		READ_CONF(bm1880_config, lcd_resize_type, atoi(s));
+		READ_CONF(bm1880_config, record_path, s);
+		READ_CONF(bm1880_config, record_image, atoi(s));
+		READ_CONF(bm1880_config, fd_algo, atoi(s));
+		READ_CONF(bm1880_config, fd_only_maximum, atoi(s));
+		READ_CONF(bm1880_config, do_fr, atoi(s));
+		READ_CONF(bm1880_config, do_facepose, atoi(s));
+		READ_CONF(bm1880_config, frame_source, s);
+		READ_CONF(bm1880_config, camera_id, atoi(s));
+		READ_CONF(bm1880_config, camera_capture_mode , atoi(s));
+		READ_CONF(bm1880_config, load_pic_path, s);
 		//face spoofing
-		READ_CONF(edb_config, fs_enable, atoi(s));
+		READ_CONF(bm1880_config, afs_enable, atoi(s));
+		READ_CONF(bm1880_config, afs_debug_show_visual, atoi(s));
+		READ_CONF(bm1880_config, afs_debug_frame_record_real, atoi(s));
+		READ_CONF(bm1880_config, afs_debug_frame_record_fake, atoi(s));
+		READ_CONF(bm1880_config, afs_frame_record_path, s);
+		//READ_CONF(bm1880_config, ,);
+
+		string s_time = GetSystemTime();
+		if (bm1880_config.afs_debug_frame_record_real == 1) {
+			system(("mkdir -p " + bm1880_config.afs_frame_record_path + "/capture_real").c_str());
+			bm1880_config.afs_frame_record_real_prefix =
+				bm1880_config.afs_frame_record_path + "/capture_real/" + s_time;
+
+			BM_LOG(LOG_DEBUG_NORMAL, cout << "fs_frame_record_real_prefix " \
+				<< bm1880_config.afs_frame_record_real_prefix <<endl);
+		}
+
+		if (bm1880_config.afs_debug_frame_record_fake == 1) {
+			system(("mkdir -p " + bm1880_config.afs_frame_record_path + "/capture_fake").c_str());
+			bm1880_config.afs_frame_record_fake_prefix =
+				bm1880_config.afs_frame_record_path + "/capture_fake/" + s_time;
+
+			BM_LOG(LOG_DEBUG_NORMAL, cout << "fs_frame_record_fake_prefix " \
+				<< bm1880_config.afs_frame_record_fake_prefix <<endl);
+		}
+
 	}
 }
 
@@ -311,10 +389,8 @@ void BmPrintHelp(char **argv)
 	cout << endl << "Usage: " << endl;
 	cout << "help         : ./demo_edb --help" << endl;
 	cout << "capture      : ./demo_edb --capture" << endl;
-	cout << "run          : ./demo_edb --run --source [dir/pic/cam] --path [path/camera id] [--setp]" << endl;
 	cout << "facereg      : ./demo_edb --facereg --add --source [dir/pic] --path [a valid path]" <<endl;
-	cout << "facereg      : ./demo_edb --facereg --delete [id]" <<endl;
-	cout << "facereg      : ./demo_edb --facereg --update [id] --source [pic] --path [a valid path]" <<endl;
+	cout << "facereg      : ./demo_edb --facereg --deleteall" <<endl;
 	cout << "facereg      : ./demo_edb --facereg --list" <<endl;
 
 	cout << "If no options will enter cli mode." << endl;
@@ -325,48 +401,31 @@ enum pgm_opts
 {
 	opt_null, //0
 	opt_help, //1
+	opt_cli,
 	opt_capture,
-	opt_run,
 	opt_source,
 	opt_path,
 	opt_step,
 	opt_facereg,
 	opt_add,
-	opt_delete,
-	opt_update,
+	opt_deleteall,
 	opt_list,
-	opt_antispoof,
 	opt_config,
-	//opt_,
-	//opt_,
-	//opt_,
-};
-
-enum repo_opts
-{
-	REPO_NULL,
-	REPO_ADD,
-	REPO_DELETE,
-	REPO_UPDATE,
-	REPO_LIST,
-	REPO_DELETE_ALL,
 };
 
 
 static struct option long_options[] = \
 {
 	{"help",		no_argument,		NULL,	opt_help},
+	{"cli",			no_argument,		NULL,	opt_cli},
 	{"capture",		no_argument,		NULL,	opt_capture},
-	{"run",			no_argument,		NULL,	opt_run},
 	{"source",		required_argument,	NULL,	opt_source},
 	{"path",		required_argument,	NULL,	opt_path},
 	{"step",		no_argument,		NULL,	opt_step},
 	{"facereg",		no_argument,		NULL,	opt_facereg},
 	{"add",			no_argument,		NULL,	opt_add},
-	{"delete",		required_argument,	NULL,	opt_delete},
-	{"update",		required_argument,	NULL,	opt_update},
+	{"deleteall",	no_argument,		NULL,	opt_deleteall},
 	{"list",		no_argument,		NULL,	opt_list},
-	{"antispoof",	no_argument,		NULL,	opt_antispoof},
 	{"config",		required_argument,	NULL,	opt_config},
 	{NULL,			 0,					NULL,	opt_null}
 };
@@ -382,17 +441,16 @@ int main(int argc, char *argv[])
 	size_t face_id = 0;
 	string source,sorce_path;
 	bool pre_do_face_reg = false;
-	bool pre_do_antispoof = false;
 	bool capture_mode = false;
-	bool run_mode = false;
 	bool step_mode = false;
+	bool cli_mode = false;
 	SHOW_WELLCOM();
-	
+
     while ((input_opt = getopt_long(argc, argv, "c:s:p", long_options, &option_index))!= -1) {
-        BM_LOG(LOG_DEBUG_USER_4, cout<< "opt = 0x" << hex << input_opt 
+        BM_LOG(LOG_DEBUG_USER_4, cout<< "opt = 0x" << hex << input_opt
 			<< " optarg = " << ((optarg==NULL)?"Null":optarg)
 			<< " optind = " << dec << optind
-			<< " argv[optind] = " << ((argv[optind] ==NULL)?"Null":argv[optind]) 
+			<< " argv[optind] = " << ((argv[optind] ==NULL)?"Null":argv[optind])
 			<< " option_index = " << dec << option_index
 			<<endl);
 
@@ -400,20 +458,22 @@ int main(int argc, char *argv[])
 			case opt_help:
 				BmPrintHelp(argv);
 				return 0;
+			case opt_cli:
+				cli_mode = true;
+				break;
 			case opt_capture:
 				capture_mode = true;
 				break;
-			case opt_run:
-				run_mode = true;
-				break;
 			case opt_source:
 				source = optarg;
+				bm1880_config.frame_source = source;
 				break;
 			case opt_path:
 				sorce_path = optarg;
+				bm1880_config.load_pic_path = sorce_path;
 				break;
 			case opt_step:
-				edb_config.step = true;
+				bm1880_config.step = true;
 				break;
 			case opt_facereg:
 				pre_do_face_reg = true;
@@ -421,86 +481,34 @@ int main(int argc, char *argv[])
 			case opt_add:
 				reg_mode = REPO_ADD;//repo add
 				break;
-			case opt_delete:
-				face_id = atoi(optarg);
-				cout << "face_id = " << face_id << endl;
-				if(face_id != 0)
-					reg_mode = REPO_DELETE;//repo delete
-				else {
-					string __arg(optarg);
-					if(__arg.compare("all") == 0)
-						reg_mode = REPO_DELETE_ALL;//repo delete all
-				}
-				break;
-			case opt_update:
-				face_id = atoi(optarg);
-				reg_mode = REPO_UPDATE;//repo update
+			case opt_deleteall:
+				reg_mode = REPO_DELETE_ALL;//repo add
 				break;
 			case opt_list:
 				reg_mode = REPO_LIST;//repo list
-				break;
-			case opt_antispoof:
-				pre_do_antispoof = true;
-				break;
-			case '?':
 				break;
 			default:
 				break;
 		}
 	}
 
-	Bm1880DemoEnvSetup();
+	BmFdFrDemoEnvSetup();
 
 	if (capture_mode == true) {
-		edb_config.camera_capture_mode = true;
-		edb_config.record_image = true;
-	}
-
-	if (run_mode == true) {
-		if (source.empty() || sorce_path.empty()) {
-			BM_LOG(LOG_DEBUG_ERROR, cout << "Invalid input !!" << endl);
-		} else {
-			edb_config.source_type = source;
-			edb_config.load_pic_path = sorce_path;
-		}
-		edb_config.record_image = false;
-	}
-
-	if (pre_do_antispoof == true) {
-		if (source.compare("pic") == 0) {
-			edb_config.fs_debug_frame_record_real = 0;
-			edb_config.fs_debug_frame_record_fake = 0;
-			BmfaceDoFaceSpoofing(1, sorce_path);
-			char c = getchar();
-			return 0;
-		} else if(source.compare("dir") == 0) {
-			edb_config.fs_debug_frame_record_real = 1;
-			edb_config.fs_debug_frame_record_fake = 0;
-			BmfaceDoFaceSpoofing(2, sorce_path);
-			char c = getchar();
-			return 0;
-		} else {
-			cout << "Invalid input!!" << endl;
-			return -1;
-		}
+		bm1880_config.camera_capture_mode = true;
+		bm1880_config.record_image = true;
 	}
 
 	if (pre_do_face_reg == true) {
 		cout << "reg_mode = " << reg_mode << endl;
-
 		switch(reg_mode) {
 			case REPO_ADD://repo add
 				if (source.compare("pic") == 0) {
-					BmFaceAddIdentity(1, sorce_path, 0);
+					BmFaceRegister(BM_FACE_REG_USE_PICTURE, sorce_path);
 				} else if (source.compare("dir") == 0) {
-					BmFaceAddIdentity(2, sorce_path, 0);
+					BmFaceRegister(BM_FACE_REG_USE_FOLDER, sorce_path);
 				}
 				break;
-			case REPO_DELETE://repo delete
-				BmFaceRemoveIdentity(face_id);
-				break;
-			case REPO_UPDATE://repo update
-				BmFaceUpdateIdentity(sorce_path, face_id);
 			case REPO_LIST://repo list
 				BmFaceShowRepoList();
 				break;
@@ -510,29 +518,27 @@ int main(int argc, char *argv[])
 			default:
 				cout << "Invalid input!!" << endl;
 				return -1;
-		}
-		char c = getchar();
-		return 0;
+			}
+			return 0;
 	}
 
 	//-------------------------------
-	if ((capture_mode==true) || (run_mode == true)) {
-		char __cmd0[] = "camera";
-		char __cmd1[] = "open";
+	BmCliInit();
+	BmCliListCliHelp();
+	BmCliListCliBase();
+
+	if (cli_mode == true) {
+		BmCliMain(0, NULL);
+	} else {
+		char __cmd0[] = "fdfr";
+		char __cmd1[] = "start";
 		static char *__argv[2] = {
 			__cmd0,
 			__cmd1,
 		};
-		CliCmdCamera(2, __argv);
+		//CliCmdfdfr(2, __argv);
 
-		while (1) {
-			sleep(1);
-		}
-	} else {
-		BmCliInit();
-		BmCliListCliHelp();
-		BmCliListCliBase();
-		BmCliMain();
+		BmCliMain(2, __argv);
 	}
 	return 0;
 }

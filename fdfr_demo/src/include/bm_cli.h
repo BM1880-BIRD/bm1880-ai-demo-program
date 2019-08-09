@@ -14,14 +14,14 @@
 extern void BmCliListCliBase(void);
 extern void BmCliListCliHelp(void);
 extern void BmCliInit(void);
-extern void BmCliMain(void);
+extern void BmCliMain(int argc, char *argv[]);
 //=================================================
 extern int BmCliCmdGetFrame(int argc,char *argv[]);
-extern int BmCliCmdThresholdValue(int argc,char *argv[]);
-extern int CliCmdCamera(int argc,char *argv[]);
+extern int CliCmdfdfr(int argc,char *argv[]);
 extern int CliCmdTestFr(int argc,char *argv[]);
-extern int CliCmdRecordPath(int argc, char *argv[]);
-extern int CliCmdFaceAlgorithm(int argc, char *argv[]);
 extern int CliCmdDoFaceRegister(int argc,char *argv[]);
+extern int CliCmdRepoManage(int argc,char *argv[]);
+extern int BmCliCmdPrintCfg(int argc, char *argv[]);
+extern int BmCliCmdSetCfg(int argc, char *argv[]);
 
 #endif

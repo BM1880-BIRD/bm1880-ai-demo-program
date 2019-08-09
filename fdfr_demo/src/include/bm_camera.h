@@ -17,10 +17,9 @@
 #define SUPPORT_ZKT_FAM600_CAMERA
 
 
-extern int u4PicRdValue;
-
 int BmCameraGetFrame(cv::Mat &matFrame);
-extern int BmFaceDisplay(cv::Mat &frame);
+int BmFaceDisplay(cv::Mat &frame);
 
+extern cv::Mat bm_testframe;
 #endif
 

@@ -46,7 +46,8 @@ using namespace qnn::utils;
 
 int bmface_log_level = LOG_DEBUG_NORMAL;
 
-face_algorithm_t fd_algo = FD_TINYSSH;
+//face_algorithm_t fd_algo = FD_TINYSSH;
+
 //
 pthread_t bmface_tid;
 
@@ -63,13 +64,12 @@ std::mutex bmpicrd_lock_;
 //std::mutex mu;
 //std::condition_variable cond;
 
-pthread_t bmpicrd_tid;
+pthread_t bmpic_record_tid;
 
 
 //threshold
 double sim_threshold = 0.6;
 
-string face_reg_name;
 int do_face_reg = 0;
 
 string person_name ="";
@@ -91,7 +91,9 @@ vector<vector<string>> detector_models = {
 		"",
 	},
 	{//Face spoof
-		"",
+		"/system/data/bmodel/anti-facespoofing/face_spoof_0703.bmodel",
+		"/system/data/bmodel/anti-facespoofing/face_spoof_0702.bmodel",
+		"/system/data/bmodel/anti-facespoofing/face_spoof_0706.bmodel",
 	}
 };
 
@@ -106,17 +108,17 @@ int BmFaceDisplayInit(void)
 {
 	static bool hasinit = false;
 	if (hasinit == false) {
-		if (edb_config.host_ip_addr.empty() && (edb_config.lcd_display == false)) {
+		if (bm1880_config.host_ip_addr.empty() && (bm1880_config.lcd_display == false)) {
 			BM_FACE_LOG(LOG_DEBUG_ERROR,
 				cout<<" Please set host ip address or enable tft lcd first."<<endl);
 			return -1;
 		}
 
-		if (!edb_config.host_ip_addr.empty()) {
+		if (!bm1880_config.host_ip_addr.empty()) {
 			pthread_create(&sk_tid,NULL,BmFaceSocketThread,NULL);
 		}
 
-		if (edb_config.lcd_display) {
+		if (bm1880_config.lcd_display) {
 			BmLcdInit();
 		}
 
@@ -130,45 +132,80 @@ int BmFaceDisplay(cv::Mat &frame)
 	BmFaceDisplayInit();
 
 	//send data to lcd.
-	if (edb_config.lcd_display) {
+	if (bm1880_config.lcd_display) {
 		BmLcdAddDisplayFrame(frame);
 	}
 
 	//send data to socket.
-	if (!edb_config.host_ip_addr.empty()) {
+	if (!bm1880_config.host_ip_addr.empty()) {
 		cv::Mat img = frame.clone();
 		std::lock_guard<std::mutex> locker(lock_);
-		imagebuffer.push(img);
-		if (imagebuffer.size() > 3) {
-			imagebuffer.pop();
+
+		if (imagebuffer.size() <= 3) {
+			imagebuffer.push(img);
 		}
 		available_.notify_one();
 		BM_FACE_LOG(LOG_DEBUG_USER_(3), cout << "queue size : " << imagebuffer.size() << endl);
 	}
 }
 
+unique_ptr<FDFR> bm_fdfr = nullptr;
+int BmFaceSetupFdFrModel(void)
+{
+	if (bm_fdfr == nullptr) {//create FDFR & FaceImpl instance
+		face_algorithm_t fd_algo = (face_algorithm_t)bm1880_config.fd_algo;
+		printf("%s: %d .\n",__FUNCTION__, fd_algo);
+		bm_fdfr.reset(new FDFR(fd_algo, detector_models[fd_algo], FR_BMFACE, extractor_models[0]));
+	}
+	BM_FACE_LOG(LOG_DEBUG_NORMAL, cout << "Repo size: " << bm_repo.id_list().size() << endl);
+	if (bm_repo.id_list().size() == 0) {
+		BM_FACE_LOG(LOG_DEBUG_ERROR, cout << "Repo is NULL, Please check !!" << endl);
+		bm1880_config.do_fr = 0;
+	}
+	return 0;
+}
 void* BmFaceThread(void *arg)
 {
 	int Ret = 0;
-	stringstream strStream;
+
 	struct timeval start_time,end_time;
 	string s_time = GetSystemTime();
-	int fram_num = 0;
-	//create FDFR & FaceImpl instance
-	FDFR fdfr(fd_algo, detector_models[fd_algo], FR_BMFACE, extractor_models[0]);
+	int frame_num = 0;
 
-	std::unique_ptr<AntiFaceSpoofing> spoof_detector;
-
-	BM_FACE_LOG(LOG_DEBUG_NORMAL,
-		cout << "Repo size: " << repo.id_list().size() << endl);
-
+	if(BmFaceSetupFdFrModel() != 0) {
+		pthread_exit(NULL);
+	}
+	if(BmFaceSetupAfsClassify() != 0) {
+		pthread_exit(NULL);
+	}
 	//while loop for bmface thread
 	while (1) {
 		cv::Mat frame;
-		vector<fd_result_t> results;
+		vector<face_info_t> results;
 		vector<face_info_t> face_infos;
 		vector<face_features_t> features_list;
-		vector<fr_result_t> face_result;
+		bool liveness = false;
+
+
+
+		if (bm1880_config.pause == true) {
+			char c = getchar();
+			printf("getchar 0x%x .\n", c);
+			bm1880_config.pause = false;
+		}
+		if (bm1880_config.stop == true) {
+			bm1880_config.stop = false;
+			break;
+		}
+		if (bm1880_config.step == true) {
+			char c = getchar();
+			if ( c == 'e')
+			{
+				cout << "step mode : false ." << endl;
+				bm1880_config.step = false;
+			}
+		}
+
 
 		if (!BmCameraGetFrame(frame)) {
 			BM_FACE_LOG(LOG_DEBUG_USER_(3),
@@ -178,160 +215,120 @@ void* BmFaceThread(void *arg)
 		{
 			pthread_exit(NULL);
 		}
+		bm_testframe = frame.clone();
 
-		PERFORMACE_TIME_MESSURE_START(start_time);
-		fdfr.detect(frame,results);
-		PERFORMACE_TIME_MESSURE_END(end_time);
-		BM_FACE_LOG(LOG_DEBUG_USER_(3), cout<< "detect done ." << endl);
+		bm_fdfr->detect(frame, results);
+		bm_fdfr->fd_time.print();
+
+
 		//=========================================================================================================
-		if (results.size() > 0) {
-			float face_size =0, max_size =0;
-			int max_size_id = 0;
-			for (size_t i = 0; i < results.size(); i++ ) {
+		BM_FACE_LOG(LOG_DEBUG_NORMAL, cout << "Total " << results.size() << " faces detected."<<endl);
+		if (results.size() == 0)
+			continue;
+		std::sort(results.begin(), results.end(), [](face_info_t &a, face_info_t &b) {
+				return (a.bbox.x2 - a.bbox.x1 + 1) * (a.bbox.y2 - a.bbox.y1 + 1)
+						> (b.bbox.x2 - b.bbox.x1 + 1) * (b.bbox.y2 - b.bbox.y1 + 1);
+		});
 
-				float X1 = results[i].bbox.x1;
-				float Y1 = results[i].bbox.y1;
-				float X2 = results[i].bbox.x2;
-				float Y2 = results[i].bbox.y2;
-				BM_FACE_LOG(LOG_DEBUG_USER_3, strStream << "     face " << i+1<< ": ("
-								<< results[i].bbox.x1 << ", " << results[i].bbox.y1 << "), ("
-								<< results[i].bbox.x2 << ", " << results[i].bbox.y2 << ")"
-								<< results[i].bbox.score << endl);
+		if (bm1880_config.fd_only_maximum == true) {
+			int face_size = (int)((results[0].bbox.x2 - results[0].bbox.x1 + 1) * (results[0].bbox.y2 - results[0].bbox.y1 + 1));
+			if (face_size < 3000)
+				continue;
+			else
+				face_infos.emplace_back(results[0]);
+		} else {
+			face_infos.swap(results);
+		}
 
-				face_size = (X2-X1)*(Y2-Y1);
-				if (i == 0) {
-					max_size = face_size;
-					max_size_id = i;
+		if (bm1880_config.afs_enable)
+		{
+			liveness = BmFaceRunAfs(frame, face_infos[0]);
+			BM_FACE_LOG(LOG_DEBUG_USER_3, cout << "" << (liveness?"Real":"Fake") << endl);
+		}
+
+		//printf("do_fr = %d .\n", bm1880_config.do_fr);
+		if (bm1880_config.do_fr > 0) {
+			cv:Mat frame_img = frame.clone();
+
+			bm_fdfr->extract(frame,face_infos,features_list);
+			bm_fdfr->align_time.print();
+			bm_fdfr->fr_time.print();
+
+			for (int i = 0; i < face_infos.size(); i++) {
+				auto match_result = bm_repo.match(features_list[i].face_feature.features, sim_threshold);
+
+				BM_FACE_LOG(LOG_DEBUG_USER_3,cout << "match_result: " << match_result.matched
+					<< " " << match_result.id << " " << match_result.score << endl);
+
+				string match_name = "nuknown";
+				if(match_result.matched == true) {
+					match_name = bm_repo.get_name(match_result.id).value_or("");
+				}
+
+				float x1 = face_infos[i].bbox.x1;
+				float y1 = face_infos[i].bbox.y1;
+				float x2 = face_infos[i].bbox.x2;
+				float y2 = face_infos[i].bbox.y2;
+
+				if (liveness && (i == 0)) {
+					cv::rectangle(frame, cv::Point(x1, y1),	cv::Point(x2, y2), cv::Scalar(0, 255, 0), 3, 8, 0);
 				} else {
-					if (face_size > max_size) {
-						max_size = face_size;
-						max_size_id = i;
-					}
+					cv::rectangle(frame, cv::Point(x1, y1),	cv::Point(x2, y2), cv::Scalar(0, 0, 255), 3, 8, 0);
 				}
+
+				int pos_x = std::max(int(x1 - 5), 0);
+				int pos_y = std::max(int(y1 - 10), 0);
+				cv::putText(frame, match_name, cv::Point(pos_x, pos_y), cv::FONT_HERSHEY_PLAIN, 4.0, CV_RGB(0,255,255), 2.0);
+
+				#ifdef BM_FDFR_DEBUG
+				if (bm1880_config.record_image == true) {
+					stringstream strStream << "echo \"" << bm1880_config.do_fr << ": "
+						<< ((match_name == person_name)?"Fail":"Pass")\
+						<< "| name: " << match_name \
+						<< "| score: " << match_result.score\
+						<< "\" >> " << (bm1880_config.record_path+"/"+person_name)+"/"+person_name+".txt";
+					cv::Mat test;
+					//cout << "txt: " << strStream.str() << endl;
+					BmImageRecord(test, "", strStream.str());
+				}
+				#endif
 			}
-			BM_FACE_LOG(LOG_DEBUG_USER_3, strStream << "    Total " << results.size() << " faces detected.");
-			//cout<<" max_size="<<max_size<<",max_size_id="<<max_size_id<<endl;
-			strStream.str("");
-			
-			if (max_size > 3000) {
-				if (edb_config.fd_only_maximum == true) {
-					fd_result_t faceinfo_max;
-					faceinfo_max = results[max_size_id];
-					face_infos.emplace_back(faceinfo_max);
+			#ifdef BM_FDFR_DEBUG
+			if (bm1880_config.record_image == true) {
+				string pic_name = bm1880_config.record_path+"/" + person_name+"/" + person_name + "_" + to_string(bm1880_config.do_fr)+"_ori.png";
+				BmImageRecord(frame_img, pic_name, "");
+				pic_name = bm1880_config.record_path+"/" + person_name+"/" + person_name + "_" + to_string(bm1880_config.do_fr)+".png";
+				BmImageRecord(frame, pic_name, "");
+			}
+			#endif
+			if (bm1880_config.do_fr < 10000)
+				bm1880_config.do_fr --;
+		} else {
+			if ((bm1880_config.camera_capture_mode) && (bm1880_config.record_image == true)) {
+				string pic_name = bm1880_config.record_path + "/" +
+					s_time + "_frame_"+ to_string(frame_num++) + ".png";
+
+				cout << "name : " << pic_name << endl;
+				//cv::imwrite(_name, frame);
+				BmImageRecord(frame, pic_name, "");
+			}
+
+			for (int i = 0; i < face_infos.size(); i++) {
+				if (liveness && (i == 0)) {
+					cv::rectangle(frame, cv::Point(face_infos[i].bbox.x1, face_infos[i].bbox.y1),
+						cv::Point(face_infos[i].bbox.x2, face_infos[i].bbox.y2), cv::Scalar(0, 255, 0), 3, 8, 0);
 				} else {
-					face_infos = results;
-				}
-			}
-
-			if (do_face_reg) {
-				//Need do face qulity check.
-				fdfr.extract(frame,face_infos,features_list);
-				if (features_list.size() == 1) {
-					uint32_t id = repo.add(face_reg_name, features_list[0].face_feature.features);
-					BM_FACE_LOG(LOG_DEBUG_NORMAL, cout << "Add face identity, id = "<< dec << id << endl);
-				}
-				do_face_reg = 0;
-			}
-
-			if (edb_config.do_fr > 0) {
-				cv:Mat frame_img = frame.clone();
-
-				if (repo.id_list().size() == 0) {
-					BM_FACE_LOG(LOG_DEBUG_ERROR,
-						cout << "Repo is NULL, Please check !!" << endl);
-					edb_config.do_fr = 0;
-				} else {
-					fdfr.extract(frame,face_infos,features_list);
-					face_result.resize(face_infos.size());
-
-					for (int i = 0; i < face_infos.size(); i++) {
-						auto match_result = repo.match(features_list[i].face_feature.features, sim_threshold);
-
-						BM_FACE_LOG(LOG_DEBUG_USER_3,
-							cout << "match_result: " << match_result.matched
-							<< " " << match_result.id << " " << match_result.score << endl);
-
-						face_result[i] = gen_fr_result(face_infos[i], features_list[i]);
-						//memset(face_result[i].name.data(), 0, face_result[i].name.size());
-						if(match_result.matched == true) {
-							strncpy(face_result[i].name.data(),
-								repo.get_match_name(match_result).data(), face_result[i].name.size());
-						} else {
-							strncpy(face_result[i].name.data(), "unknown", sizeof("unknown"));
-						}
-
-						float x1 = face_result[i].face.bbox.x1;
-						float y1 = face_result[i].face.bbox.y1;
-						float x2 = face_result[i].face.bbox.x2;
-						float y2 = face_result[i].face.bbox.y2;
-						cv::rectangle(frame, cv::Point(x1, y1),	cv::Point(x2, y2), cv::Scalar(255, 255, 0), 3, 8, 0);
-
-						int pos_x = std::max(int(x2 + 5), 0);
-						int pos_y = std::max(int(y1 - 10), 0);
-						cv::putText(frame, face_result[i].name.data(),
-							cv::Point(pos_x, pos_y), cv::FONT_HERSHEY_PLAIN, 4.0, CV_RGB(255,255,0), 2.0);
-
-						face_pts_t facePts = face_result[i].face.face_pts;
-						for (int j = 0; j < 5; j++) {
-							cv::circle(frame, cv::Point(facePts.x[j], facePts.y[j]),
-								1, cv::Scalar(255, 255, 0), 8);
-						}
-
-						if (edb_config.record_image == true) {
-							strStream << "echo \"" << edb_config.do_fr << ": "
-								<< (strcmp(face_result[i].name.data(), person_name.c_str())?"Fail":"Pass")\
-								<< "| name: " << face_result[i].name.data()\
-								<< "| score: " << match_result.score\
-								<< "\" >> " << (edb_config.record_path+"/"+person_name)+"/"+person_name+".txt";
-							cv::Mat test;
-							//cout << "txt: " << strStream.str() << endl;
-							BmImageRecord(test, "", strStream.str());
-						}
-					}
-					if (edb_config.record_image == true) {
-						string pic_name = edb_config.record_path+"/" +	person_name+"/" + person_name + "_" + to_string(edb_config.do_fr)+"_ori.png";
-						//cout << "pic: " << pic_name << endl;
-						BmImageRecord(frame_img, pic_name, "");
-						pic_name = edb_config.record_path+"/" + person_name+"/" + person_name + "_" + to_string(edb_config.do_fr)+".png";
-						BmImageRecord(frame, pic_name, "");
-					}
-					if (edb_config.do_fr < 10000)
-						edb_config.do_fr --;
-				}
-			
-			} else {
-				if ((edb_config.camera_capture_mode) && (edb_config.record_image == true)) {
-					string pic_name = edb_config.record_path + "/" +
-						s_time + "_frame_"+ to_string(fram_num++) + ".png";
-
-					cout << "name : " << pic_name << endl;
-					//cv::imwrite(_name, frame);
-					BmImageRecord(frame, pic_name, "");
+					cout << "mark 1 " << endl;
+					cv::rectangle(frame, cv::Point(face_infos[i].bbox.x1, face_infos[i].bbox.y1),
+						cv::Point(face_infos[i].bbox.x2, face_infos[i].bbox.y2), cv::Scalar(0, 0, 255), 3, 8, 0);
 				}
 
-				for (int i = 0; i < face_infos.size(); i++) {
-					float x1 = face_infos[i].bbox.x1;
-					float y1 = face_infos[i].bbox.y1;
-					float x2 = face_infos[i].bbox.x2;
-					float y2 = face_infos[i].bbox.y2;
-					cv::rectangle(frame, cv::Point(x1, y1),	cv::Point(x2, y2), cv::Scalar(255, 255, 0), 3, 8, 0);
-
-					if (edb_config.do_facepose == true) {
-						cv::Rect rect(x1, y1, x2, y2);
-			            if (rect.x < 0) rect.x = 0;
-			            if (rect.y < 0) rect.y = 0;
-			            if (rect.x + rect.width >= frame.cols) rect.width = frame.cols - rect.x;
-			            if (rect.y + rect.height >= frame.rows) rect.height = frame.rows - rect.y;
-			            cv::Mat cropped_img = frame(rect).clone();
-						BmFaceFacePose(cropped_img);
-					}
-					
-					face_pts_t facePts = face_infos[i].face_pts;
-					for (int j = 0; j < 5; j++) {
-						cv::circle(frame, cv::Point(facePts.x[j], facePts.y[j]),
-							1, cv::Scalar(255, 255, 0), 8);
-					}
+				#if 0
+				face_pts_t facePts = face_infos[i].face_pts;
+				for (int j = 0; j < 5; j++) {
+					cv::circle(frame, cv::Point(facePts.x[j], facePts.y[j]), 1, cv::Scalar(255, 255, 0), 8);
 				}
+				#endif
 			}
 		}
 
@@ -340,8 +337,7 @@ void* BmFaceThread(void *arg)
 		PERFORMACE_TIME_MESSURE_END(end_time);
 	}
 
-	extern int fd_spidev;
-	close(fd_spidev);
+	bmface_tid = 0;
 	pthread_exit(NULL);
 }
 
@@ -389,48 +385,38 @@ void* BmPicRecordThread(void *arg)
 }
 
 
-int CliCmdCamera(int argc,char *argv[])
+int CliCmdfdfr(int argc,char *argv[])
 {
 	if (argc == 1) {
-		cout<<"Usage: camera [config|open|stop]"<<endl;
+		cout<<"Usage: fdfr [start|pause|stop]"<<endl;
 		return 0;
 	} else if(argc == 2) {
-		if (!strcmp(argv[1],"open")) {
-			cv::Mat testFrame;
-			if (edb_config.source_type == "cam") 
-				BmCameraGetFrame(testFrame);
+		if (!strcmp(argv[1],"start")) {
+
 			pthread_create(&bmface_tid, NULL, BmFaceThread,NULL);
-			if ((edb_config.record_image == true) || (edb_config.fs_debug_frame_record_real == true)
-					|| (edb_config.fs_debug_frame_record_fake == true)) {
-				pthread_create(&bmpicrd_tid, NULL, BmPicRecordThread,NULL);
+			if ((bm1880_config.record_image == true) || (bm1880_config.afs_debug_frame_record_real == true)
+					|| (bm1880_config.afs_debug_frame_record_fake == true)) {
+				pthread_create(&bmpic_record_tid, NULL, BmPicRecordThread,NULL);
 			}
-			
 			//cout<<"Open uvc camera ."<<endl;
 			return 0;
-		} else if(!strcmp(argv[1],"stop")) {
-			cout<<"Stop uvc camera ."<<endl;
+		} else if(!strcmp(argv[1],"pause")) {
+			bm1880_config.pause = true;
+			cout<<"Pause bmface thread ."<<endl;
 			return 0;
-		}
-	} else if(argc == 3) {
-		if (!strcmp(argv[1],"config")) {
+		} else if(!strcmp(argv[1],"stop")) {
+			bm1880_config.stop = true;
+			cout<<"Stop bmface thread ."<<endl;
+			return 0;
+		} else if(!strcmp(argv[1],"step")) {
+			bm1880_config.step = true;
+			cout<<"Set step mode : true."<<endl;
 			return 0;
 		}
 	}
 
 	cout<<"Input Error !!"<<endl;
 	return -1;
-}
-
-
-
-
-int CliCmdRecordPath(int argc, char* argv[])
-{
-	if (argc == 2) {
-		edb_config.record_path = argv[1];
-	}
-	cout<<"Test result will in: "<<edb_config.record_path<<" ."<<endl;
-	return 0;
 }
 
 int CliCmdTestFr(int argc,char *argv[])
@@ -441,82 +427,29 @@ int CliCmdTestFr(int argc,char *argv[])
 	if (argc == 1) {
 		cout<<"Usage: testfr [num] [name]"<<endl;
 		return 0;
+	} else if(argc == 2) {
+		if (!strcmp(argv[1],"stop")) {
+			bm1880_config.do_fr = 0;
+		}
 	} else if(argc == 3) {
 		value = atoi(argv[1]);
 		person_name = argv[2];
 
-		sprintf(_cmd,"mkdir -p %s",(edb_config.record_path+"/"+person_name).c_str());
+		sprintf(_cmd,"mkdir -p %s",(bm1880_config.record_path+"/"+person_name).c_str());
 		cout<<"system cmd :"<<_cmd<<endl;
 		system(_cmd);
-		sprintf(_cmd,"rm %s/*",(edb_config.record_path+"/"+person_name).c_str());
+		sprintf(_cmd,"rm %s/*",(bm1880_config.record_path+"/"+person_name).c_str());
 		cout<<"system cmd :"<<_cmd<<endl;
 		system(_cmd);
-		sprintf(_cmd,"touch %s/%s.txt",(edb_config.record_path+"/"+person_name).c_str(),person_name.c_str());
+		sprintf(_cmd,"touch %s/%s.txt",(bm1880_config.record_path+"/"+person_name).c_str(),person_name.c_str());
 		cout<<"system cmd :"<<_cmd<<endl;
 		system(_cmd);
 
-		edb_config.do_fr = value;
+		bm1880_config.do_fr = value;
 	}
 
-	cout<<" face detect is :"<<(edb_config.do_fr?"Enable":"Disable")<<" ."<<endl;
+	cout<<" face detect is :"<<(bm1880_config.do_fr?"Enable":"Disable")<<" ."<<endl;
 	return 0;
 }
 
-int BmCliCmdThresholdValue(int argc, char *argv[])
-{
-	if(argc == 1){
-		cout<<"Usage: threshold [get|set]"<<endl;
-		return 0;
-	} else if(argc == 2) {
-		if (!strcmp(argv[1],"get")) {
-			cout<<"sim_threshold = "<<sim_threshold<<" ."<<endl;
-			return 0;
-		}
-	} else if(argc == 3) {
-		if (!strcmp(argv[1],"set")) {
-			sim_threshold = strtof(argv[2],NULL);
-			cout<<"sim_threshold = "<<sim_threshold<<" ."<<endl;
-			return 0;
-		}
-	}
-
-	cout<<"Input Error !!"<<endl;
-	return -1;
-}
-
-
-int CliCmdFaceAlgorithm(int argc, char *argv[])
-{
-	if (argc == 1) {
-		cout<<"Usage: algorithm [change]"<<endl;
-	} else if(argc == 2) {
-		if (!strcmp(argv[1],"change")) {
-			if(fd_algo == FD_TINYSSH) {
-				fd_algo = FD_MTCNN_NATIVE;
-			} else {
-				fd_algo = FD_TINYSSH;
-			}
-			cout<<"You have changed bmiva face algorithm, please stop uvc and open again !"<<endl;
-		}
-	}
-	cout<<"Current face algorithm is : "<<((fd_algo==FD_TINYSSH)?"tiny_ssh":"mtcnn")<<" ."<<endl;
-	return 0;
-}
-
-int CliCmdDoFaceRegister(int argc,char *argv[])
-{
-	if (argc == 1) {
-		cout<<"Usage: facereg [name]"<<endl;
-		return 0;
-	} else if(argc == 2) {
-		cout<<"uvc_tid : "<<(int)bmface_tid<<endl;
-		if (!bmface_tid) {
-			cout<<"Please open camera !!"<<endl;
-		} else {
-			face_reg_name = argv[1];
-			do_face_reg = 1;
-		}
-	}
-	return 0;
-}
 

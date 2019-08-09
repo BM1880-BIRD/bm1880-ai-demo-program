@@ -64,10 +64,9 @@ typedef struct diag_cli_cmd {
   int (*func)(int argc, char *argv[]);
 }DIAG_CLI_CMD_T;
 
-#define BM1880_EDB_ENV_FILE "fdfr_demo_env.conf"
+#define BM1880_EDB_ENV_FILE "bm1880_env.conf"
 
-
-typedef struct __edb_env
+typedef struct __bm1880_env
 {
 	//network
 	string host_ip_addr = "192.168.1.163";
@@ -76,32 +75,42 @@ typedef struct __edb_env
 	bool lcd_display = false;
 	int lcd_resize_type = 0;
 	//fd fr
-	string record_path;
+	int fd_algo = 0;
 	bool record_image = false;
 	bool fd_only_maximum = false;
 	int do_fr = 0;
 	bool do_facepose = false;
-	//camera
-	string source_type = "cam";
-	string camera_type;
-	bool camera_capture_mode = false;
-	//load picture frame
+	string record_path;
+	//frame source
+	string frame_source;
+	int camera_width = 1280;
+	int camera_height = 720;
+	int camera_id = 0;
 	string load_pic_path;
+	//camera_capture_mode
+	bool camera_capture_mode = false;
 	bool step = false;
+	bool pause = false;
+	bool stop = false;
 	//face spoofing
-	bool fs_enable = 0;
-	bool fs_debug_frame_record_real = 0;
-	bool fs_debug_frame_record_fake = 0;
-} EDB_ENV_CONFIG_T;
+	bool afs_enable = 0;
+	//debug
+	bool afs_debug_show_visual = 0;
+	string afs_frame_record_path;
+	string afs_frame_record_real_prefix;
+	string afs_frame_record_fake_prefix;
+	bool afs_debug_frame_record_real = 0;
+	bool afs_debug_frame_record_fake = 0;
+} BM1880_ENV_CONFIG_T;
 
-extern EDB_ENV_CONFIG_T edb_config;
+extern BM1880_ENV_CONFIG_T bm1880_config;
 extern bool performace_test;
 extern int log_level;
 
 
 string GetSystemTime(void);
 void BmListAllFiles(string &dir_name , vector<string> &file_list);
-void BmPrintEdbEnvConfig(void);
+void BmFdFrDemoPrintEnvConfig(void);
 
 
 #endif
