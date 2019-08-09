@@ -47,8 +47,8 @@ void BmFaceSendSocket(cv::Mat frame)
 
 	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = PF_INET;
-	servaddr.sin_port = htons(edb_config.host_port);
-	if (inet_pton(AF_INET, edb_config.host_ip_addr.c_str(), &servaddr.sin_addr) <= 0) {
+	servaddr.sin_port = htons(bm1880_config.host_port);
+	if (inet_pton(AF_INET, bm1880_config.host_ip_addr.c_str(), &servaddr.sin_addr) <= 0) {
 		//LOG(LOG_DEBUG_ERROR,cout<<"inet_pton error"<<endl);
 		exit(0);
 	}
@@ -108,19 +108,21 @@ void BmFaceSendSocket(cv::Mat frame)
 
 void* BmFaceSocketThread(void *arg)
 {
+	//static int i = 0;
 	while (true) {
 		std::unique_lock<std::mutex> locker(lock_);
-		available_.wait(locker);
+		while(imagebuffer.empty())
+			available_.wait(locker);
 
-		if (!imagebuffer.empty()) {
 			auto image = std::move(imagebuffer.front());
 			imagebuffer.pop();
 			locker.unlock();
 			//LOG(LOG_DEBUG_USER_4,"start to send\n");
 			BmFaceSendSocket(image);
+			//printf("BmFaceSocketThread : %d .\n", i++);
 			//LOG(LOG_DEBUG_USER_4,"send done\n");
 			//usleep(50000);
-		}
+
 	}
 }
 

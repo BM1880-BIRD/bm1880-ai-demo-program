@@ -36,11 +36,8 @@ int log_level = DEFAULT_LEVEL;
 
 
 int BmCliCmdHelp(int argc, char **argv);
-int BmCliCmdIpconfig(int argc, char **argv);
 int BmCliCmdLogLevel(int argc, char *argv[]);
 void BmCliListCliBase(void);
-int BmCliCmdPrintEnv(int argc, char *argv[]);
-
 
 int BmCliInputCmdParse(void)
 {
@@ -81,18 +78,15 @@ int BmCliInputCmdParse(void)
 
 static const DIAG_CLI_CMD_T BmCmdList[]={
 	{"help","Show how to use this debug system.",BmCliCmdHelp},
-	{"printenv","Show bm1880 env config.",BmCliCmdPrintEnv},
 	{"loglevel","Set debug log level. ",BmCliCmdLogLevel},
-	{"ipconfig","IP address setting.",BmCliCmdIpconfig},
+	{"printcfg","Show bm1880 env config.",BmCliCmdPrintCfg},
+	{"setcfg","Set bm1880 env config.",BmCliCmdSetCfg},
 	{"lcd","Lcd display enable.",CliCmdEnableLcd},
-	{"threshold","Read the value of sim_threshold",BmCliCmdThresholdValue},
-	{"rdpath","Set the test result record path",CliCmdRecordPath},
-	{"algorithm","Bmiva face algorithm",CliCmdFaceAlgorithm},
-	{"camera","Config/Open/Stop camera",CliCmdCamera},
+	{"fdfr","Config/Open/Stop camera",CliCmdfdfr},
 	{"testfr","Start face detect program",CliCmdTestFr},
 	{"facereg","Start face register program",CliCmdDoFaceRegister},
+	{"repo","Repository manage,",CliCmdRepoManage},
 	{"getframe","Get Frame form camera", BmCliCmdGetFrame},
-
 	//{"clr","clear all setting", clr_cmd},
 	{"exit","Exit demo program!",NULL},
 };
@@ -118,25 +112,9 @@ int BmCliCmdHelp(int argc, char *argv[])
 	BmCliListCliHelp();
 	return 0;
 }
-int BmCliCmdPrintEnv(int argc, char *argv[])
-{
-	BmPrintEdbEnvConfig();
-	return 0;
-}
 
-int BmCliCmdIpconfig(int argc, char *argv[])
-{
-	if (argc == 1) {
-		if(edb_config.host_ip_addr.empty()) {
-			cout << "Please set server IP address first !!!" <<endl;
-		}
-	} else {
-		edb_config.host_ip_addr = argv[1];
-		//cout<<argv[0]<<"  "<<argv[1]<<endl;
-	}
-	cout << "The server IP is :" << edb_config.host_ip_addr <<endl;
-	return 0;
-}
+
+
 
 int BmCliCmdLogLevel(int argc, char *argv[])
 {
@@ -171,10 +149,25 @@ void BmCliInit(void)
 	}
 }
 
-void BmCliMain(void)
+void BmCliMain(int argc, char *argv[])
 {
 	int i;
-	system("stty erase ^H");
+	//system("stty erase ^H");
+
+	if((argc !=0) && !strcmp(argv[0], "exit")){
+		cout<<endl;
+		return;
+	}
+	if (argc != 0) {
+		for (i=0; i< sizeof(BmCmdList)/sizeof(DIAG_CLI_CMD_T); i++) {
+			if (!strcmp(argv[0], BmCmdList[i].cmd_name)) {
+				//cout<<"i = "<<i<<" "<<CmdList[i].cmd_name<<endl;
+				if(NULL != BmCmdList[i].func) {
+					BmCmdList[i].func(argc, (char **)argv);
+				}
+			}
+		}
+	}
 	while (1) {
 		//flockfile(stdin);
 		fgets(s,MAX_INPUT_CHARS,stdin);
@@ -188,7 +181,7 @@ void BmCliMain(void)
 			cout<<endl;
 			break;
 		}
-		if ((_argc !=0)) {
+		if (_argc != 0) {
 			for (i=0; i< sizeof(BmCmdList)/sizeof(DIAG_CLI_CMD_T);i++) {
 				if (!strcmp(_argv[0], BmCmdList[i].cmd_name)) {
 					//cout<<"i = "<<i<<" "<<CmdList[i].cmd_name<<endl;
