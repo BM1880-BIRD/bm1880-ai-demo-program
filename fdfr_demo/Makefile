@@ -46,7 +46,7 @@ LIBS += -lqnn_mtcnn
 LIBS += -lqnn_ssh 
 LIBS += -lqnn_face_attribute 
 LIBS += -lqnn_facepose
-LIBS += -lqnn_antifacespoofing 
+#LIBS += -lqnn_antifacespoofing 
 #
 LIBS += -lbmruntime 
 LIBS += -lbmkernel 
@@ -56,7 +56,7 @@ LIBS += -lbmjpulite
 LIBS += -lbmjpuapi 
 LIBS += -lbmodel 
 LIBS += -lbmutils
-LIBS += ./src/face/bm_face_anti_spoofing.a
+#LIBS += ./src/face/bm_face_anti_spoofing.a
 #
 
 #

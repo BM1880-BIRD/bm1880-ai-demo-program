@@ -173,9 +173,9 @@ void* BmFaceThread(void *arg)
 	if(BmFaceSetupFdFrModel() != 0) {
 		pthread_exit(NULL);
 	}
-	if(BmFaceSetupAfsClassify() != 0) {
-		pthread_exit(NULL);
-	}
+	//if(BmFaceSetupAfsClassify() != 0) {
+	//	pthread_exit(NULL);
+	//}
 	//while loop for bmface thread
 	while (1) {
 		cv::Mat frame;
@@ -240,8 +240,8 @@ void* BmFaceThread(void *arg)
 
 		if (bm1880_config.afs_enable)
 		{
-			liveness = BmFaceRunAfs(frame, face_infos[0]);
-			BM_FACE_LOG(LOG_DEBUG_USER_3, cout << "" << (liveness?"Real":"Fake") << endl);
+			//liveness = BmFaceRunAfs(frame, face_infos[0]);
+			//BM_FACE_LOG(LOG_DEBUG_USER_3, cout << "" << (liveness?"Real":"Fake") << endl);
 		}
 
 		//printf("do_fr = %d .\n", bm1880_config.do_fr);
