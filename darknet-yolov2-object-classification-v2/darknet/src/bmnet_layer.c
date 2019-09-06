@@ -107,7 +107,7 @@ void loop_forward_bmnet_layer(const bmnet_layer l, network net)
   }
 
   int8_quantization((int8_t *)int8_input, net.input,
-      bmnet_get_input_threshold(bm_net), input_length);
+      bmnet_get_input_info(bm_net)->threshold_array[0], input_length);
 
 #if 0
   //input fp32 file
@@ -195,7 +195,7 @@ void forward_bmnet_layer(const bmnet_layer l, network net)
   }
 
   int8_quantization((int8_t *)int8_input, net.input,
-      bmnet_get_input_threshold(bm_net), input_length);
+      bmnet_get_input_info(bm_net)->threshold_array[0], input_length);
 
 #if 0
   //input fp32 file
