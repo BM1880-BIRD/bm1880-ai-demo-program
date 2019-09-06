@@ -25,9 +25,9 @@ AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread
-LDFLAGS+= -L/opt/bmtap2/bm1880-usb_1.0.3.3/lib/usb -lbmutils -lbmruntime -lbmodel -lbmkernel -lglog -lstdc++
+LDFLAGS+= -L/opt/bmtap2/bm1880-usb_1.1.4/lib/usb -lbmutils -lbmruntime -lbmodel -lbmkernel -lglog -lstdc++
 COMMON= -Iinclude/ -Isrc/
-COMMON += -I/opt/bmtap2/bm1880-usb_1.0.3.3/include
+COMMON += -I/opt/bmtap2/bm1880-usb_1.1.4/include
 CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
 ifeq ($(OPENMP), 1) 
