@@ -7,7 +7,7 @@ OBJS = $(SRC:%.cc=%.o)
 LIB_DIR := -L/usr/local/lib
 LIBS := -lopencv_highgui -lopencv_core -lopencv_imgcodecs -lopencv_imgproc
 RPATH_DIR	 = -Wl,-rpath /usr/local/lib
-INCLUDES := -I/usr/local/include/opencv4/
+INCLUDES := -I/usr/local/include/opencv2/
 
 $(PROM): $(OBJS)
 	$(CC) -o $(PROM) $(OBJS) $(LIBS) $(LIB_DIR) $(RPATH_DIR)
