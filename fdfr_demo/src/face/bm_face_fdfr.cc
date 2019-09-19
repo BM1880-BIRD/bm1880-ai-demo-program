@@ -74,16 +74,16 @@ string person_name ="";
 
 vector<vector<string>> detector_models = {
 	{//FD_TINYSSH
-		"/system/data/bmodel/tiny_ssh.bmodel",
-		"/system/data/bmodel/det3.bmodel",
+		"/system/data/bmodel/Detection/Tiny_SSH/320x320/tiny_ssh.bmodel",
+		"/system/data/bmodel/Detection/Tiny_SSH/320x320/det3.bmodel",
 	},
 	{//FD_MTCNN
 		"",
 	},
 	{//FD_MTCNN_NATIVE
-		"/system/data/bmodel/mtcnn/det1.bmodel",
-		"/system/data/bmodel/mtcnn/det2.bmodel",
-		"/system/data/bmodel/mtcnn/det3.bmodel",
+		"/system/data/bmodel/Detection/MTCNN/nchw/det1.bmodel",
+		"/system/data/bmodel/Detection/MTCNN/nchw/det2.bmodel",
+		"/system/data/bmodel/Detection/MTCNN/nchw/det3.bmodel",
 	},
 	{//FD_SSH
 		"",

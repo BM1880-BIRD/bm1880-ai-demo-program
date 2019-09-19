@@ -63,6 +63,8 @@ LIBS += -lbmutils
 ##
 #
 INCLUDES := -I./src/include 
+INCLUDES += -I./src/include/bm_networks
+INCLUDES += -I./src/include/bm_networks/utils
 INCLUDES += -I./modules/utils/include 
 INCLUDES += -I./modules/fdfr/include 
 INCLUDES += -I./modules/image/include 
@@ -74,10 +76,6 @@ INCLUDES += -I./modules/3rd/annoy/include
 INCLUDES += -I./modules/database/include 
 #
 INCLUDES += -I$(MIDDLEWARE_DIR)/include   
-INCLUDES += -I$(MIDDLEWARE_DIR)/include/bm_networks 
-INCLUDES += -I$(MIDDLEWARE_DIR)/include/glog 
-INCLUDES += -I$(MIDDLEWARE_DIR)/include/gflags 
-INCLUDES += -I$(MIDDLEWARE_DIR)/include/bm_networks/utils 
 #for customer
 
 
