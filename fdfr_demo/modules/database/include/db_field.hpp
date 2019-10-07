@@ -100,7 +100,7 @@ public:
 
             fin.read(reinterpret_cast<char *>(content.data()), size);
 
-            if (fin.gcount() != size) {
+            if ((size_t)fin.gcount() != size) {
                 throw std::ios_base::failure("");
             }
         } else {
