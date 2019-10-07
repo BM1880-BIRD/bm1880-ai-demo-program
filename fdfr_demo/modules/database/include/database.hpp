@@ -110,6 +110,7 @@ public:
 
             data_.erase(iter);
         }
+        return true;
     }
 
     void remove_all() {
