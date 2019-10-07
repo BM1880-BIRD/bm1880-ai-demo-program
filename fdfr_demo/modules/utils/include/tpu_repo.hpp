@@ -54,7 +54,7 @@ public:
             return underlying_->match(features, threshold);
         }
 
-        if (cpu_handle_ids.size() > cpu_handle_threshold_) {
+        if (cpu_handle_ids.size() > (size_t)cpu_handle_threshold_) {
             update_tpu_data();
         }
 
@@ -158,7 +158,7 @@ public:
     void remove(size_t id) override {
         underlying_->remove(id);
 
-        if ((underlying_->size() < face_cnt_ / 2) && (face_cnt_ > face_min_cnt_)) {
+        if ((underlying_->size() < face_cnt_ / 2) && (face_cnt_ > (size_t)face_min_cnt_)) {
             update_tpu_data();
         }
     }
@@ -171,12 +171,12 @@ public:
 private:
 
     bool is_using_cpu() const {
-        return (face_cnt_ < face_min_cnt_);
+        return (face_cnt_ < (size_t)face_min_cnt_);
     }
 
     void set_face_data(size_t index, const feature_t &features) {
         face_data_len_[index] = 0;
-        for (int i = 0; i < DIM; i++) {
+        for (size_t i = 0; i < DIM; i++) {
             const int val = features[i];
 
             faces_data_1_[i * face_cnt_ + index] = val / 8;
@@ -203,7 +203,7 @@ private:
         face_data_len_.resize(face_cnt_);
 
         auto id_list = underlying_->id_list();
-        for (int i = 0; i < face_cnt_; i++) {
+        for (size_t i = 0; i < face_cnt_; i++) {
             index_to_id[i] = id_list[i];
             id_to_index[id_list[i]] = i;
             auto name_features = underlying_->get(id_list[i]);
@@ -268,7 +268,7 @@ private:
         int16_t ans;
         uint8_t *ptr = (uint8_t *)&ans;
 
-        for (int i = 0; i < face_cnt_; ++i) {
+        for (size_t i = 0; i < face_cnt_; ++i) {
             ptr[1] = tpu_out_[face_cnt_ + i];
             ptr[0] = tpu_out_[i];
 
