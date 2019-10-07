@@ -110,6 +110,7 @@ public:
 
             data_.erase(iter);
         }
+        return true;
     }
 
     void remove_all() {
@@ -169,7 +170,7 @@ private:
         data_page_t page;
         file_.read(reinterpret_cast<char*>(&page), sizeof(page));
 
-        if (file_.eof() || file_.gcount() < sizeof(page)) {
+        if (file_.eof() || (size_t)file_.gcount() < sizeof(page)) {
             file_.clear();
             throw std::ios_base::failure("eof");
         }
