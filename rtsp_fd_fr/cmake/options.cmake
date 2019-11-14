@@ -1,0 +1,22 @@
+# Set options
+option(CONFIG_FUNCTION_TRACE "Enable function trace" OFF)
+option(CONFIG_FUNCTION_SYSTRACE "Enable function systrace" ON)
+option(CONFIG_SYSTRACE "Use systrace" ON)
+
+if(CONFIG_FUNCTION_TRACE)
+    set(ENABLE_FUNCTION_TRACE 1 CACHE BOOL "" FORCE)
+else()
+    set(ENABLE_FUNCTION_TRACE 0 CACHE BOOL "" FORCE)
+endif()
+
+if(CONFIG_FUNCTION_SYSTRACE)
+    set(ENABLE_FUNCTION_SYSTRACE 1 CACHE BOOL "" FORCE)
+else()
+    set(ENABLE_FUNCTION_SYSTRACE 0 CACHE BOOL "" FORCE)
+endif()
+
+if(CONFIG_SYSTRACE)
+    set(ENABLE_TRACE 1 CACHE BOOL "" FORCE)
+else()
+    set(ENABLE_TRACE 0 CACHE BOOL "" FORCE)
+endif()

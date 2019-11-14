@@ -1,0 +1,55 @@
+{
+    "components": {
+        "openpose": {
+            "type": "pose_detection",
+            "model": "/system/data/bmodel/openpose/openpose_coco_128x224.bmodel",
+            "multi_detect": 1
+        },
+        "rtsp": {
+            "type": "video_capture",
+            "url": "rtsp://192.168.0.100:8554/test"
+        },
+        "http": {
+            "type": "multipart<image_t, VectorPack>",
+            "ip": "192.168.0.100",
+            "port": 9555,
+            "path": "/visualize/1",
+            "names": [
+                "image\"; filename=\"1.jpg",
+                "result"
+            ]
+        }
+    },
+    "pipeline_groups": {
+        "1": {
+            "pipelines": [
+                {
+                    "components": [
+                        "rtsp"
+                    ],
+                    "output_types": [
+                        "image"
+                    ],
+                    "buffer_size": 2,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "openpose"
+                    ],
+                    "output_types": [
+                        "image",
+                        "vector_pack"
+                    ],
+                    "buffer_size": 2,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "http"
+                    ]
+                }
+            ]
+        }
+    }
+}

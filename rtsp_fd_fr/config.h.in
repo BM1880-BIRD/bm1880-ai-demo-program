@@ -1,0 +1,12 @@
+// Copyright 2018 Bitmain Inc.
+// License
+// Author Yangwen Huang <yangwen.huang@bitmain.com>
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// Runtime shared memory Debug
+#cmakedefine01 ENABLE_FUNCTION_TRACE
+#cmakedefine01 ENABLE_FUNCTION_SYSTRACE
+#cmakedefine01 ENABLE_TRACE
+
+#endif    // End of CONFIG_H

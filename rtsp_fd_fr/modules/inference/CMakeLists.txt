@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.0)
+
+init_module("inference" INTERFACE)
+add_submodule("inference" "fdfr")
+add_submodule("inference" "pose")
+add_submodule("inference" "object_detection")
+add_submodule("inference" "afs")
+target_link_libraries("inference_fdfr" PUBLIC opencv prebuilt_network utility images pipeline_extension 3rd_annoy)
+target_link_libraries("inference_pose" PUBLIC opencv prebuilt_network utility images pipeline_extension)
+target_link_libraries("inference_object_detection" PUBLIC opencv prebuilt_network utility images pipeline_extension)
+target_link_libraries("inference_afs" PUBLIC opencv prebuilt_network utility images pipeline_extension inference_fdfr)

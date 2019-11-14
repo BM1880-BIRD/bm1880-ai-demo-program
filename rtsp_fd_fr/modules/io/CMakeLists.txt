@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.0)
+
+init_module("io" INTERFACE)
+add_submodule("io" "core")
+add_submodule("io" "http")
+add_submodule("io" "tty")
+add_submodule("io" "usb")
+target_link_libraries(io_core PUBLIC utility)
+target_link_libraries(io_http PUBLIC io_core)
+target_link_libraries(io_tty PUBLIC io_core)

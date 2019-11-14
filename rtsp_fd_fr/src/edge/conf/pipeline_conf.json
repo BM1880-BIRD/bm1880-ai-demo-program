@@ -1,0 +1,93 @@
+{
+    "components": {
+        "tinyssh": {
+            "type": "face_detection",
+            "algorithm": "tinyssh",
+            "models": [
+                "/system/data/bmodel/tiny_ssh.bmodel",
+                "/system/data/bmodel/det3.bmodel"
+            ]
+        },
+        "bmface": {
+            "type": "face_recognition",
+            "algorithm": "bmface",
+            "models": [
+                "/system/data/bmodel/BMFaceAttribute_calib1000.bmodel"
+            ]
+        },
+        "face_id": {
+            "type": "face_identification",
+            "repository": "/data/repository",
+            "similarity_threshold": 0.5
+        },
+        "attr_stab": {
+            "type": "face_attribute_stabilizer",
+            "repository": "/data/repository",
+            "similarity_threshold": 0.5,
+            "stranger_count": 10,
+            "stranger_similarity_threshold": 0.6,
+            "gender_method": "average",
+            "gender_queue_size": 0,
+            "gender_reset_time": 10,
+            "race_method": "average",
+            "race_queue_size": 0,
+            "race_reset_time": 10,
+            "age_method": "weighted_sum",
+            "age_queue_size": 0,
+            "age_reset_time": 10,
+            "emotion_method": "average",
+            "emotion_queue_size": 10,
+            "emotion_reset_time": 10
+        },
+        "images": {
+            "type": "image_files",
+            "path": "/images",
+            "extensions": [
+                "jpg"
+            ],
+            "recursive": true
+        },
+        "rtsp": {
+            "type": "video_capture",
+            "url": "rtsp://192.168.0.100:8554/test"
+        },
+        "http": {
+            "type": "multipart<image_t, VectorPack>",
+            "ip": "192.168.0.100",
+            "port": 9555,
+            "path": "/visualize/1",
+            "names": [
+                "image\"; filename=\"1.jpg",
+                "result"
+            ]
+        }
+    },
+    "pipeline_groups": {
+        "1": {
+            "pipelines": [
+                {
+                    "components": [
+                        "rtsp"
+                    ],
+                    "buffer_size": 3,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "tinyssh",
+                        "bmface",
+                        "face_id",
+                        "attr_stab"
+                    ],
+                    "buffer_size": 3,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "http"
+                    ]
+                }
+            ]
+        }
+    }
+}

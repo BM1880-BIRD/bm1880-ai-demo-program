@@ -1,0 +1,118 @@
+{
+    "components": {
+        "tinyssh": {
+            "type": "face_detection",
+            "algorithm": "tinyssh",
+            "models": [
+                "/mnt/models_2.1/Face/Detection/Tiny_SSH/320x320/tiny_ssh.bmodel",
+                "/mnt/models_2.1/Face/Detection/Tiny_SSH/320x320/det3.bmodel"
+            ]
+        },
+        "mtcnn": {
+            "type": "face_detection",
+            "algorithm": "mtcnn_native",
+            "models": [
+                "/mnt/models_2.1/Face/Detection/MTCNN/nchw/det1.bmodel",
+                "/mnt/models_2.1/Face/Detection/MTCNN/nchw/det2.bmodel",
+                "/mnt/models_2.1/Face/Detection/MTCNN/nchw/det3.bmodel"
+            ]
+        },
+        "uvc": {
+            "type": "video_capture",
+            "url": "/dev/video0",
+            "format": "MJPG",
+            "width": 1280,
+            "height": 720
+        },
+        "rtsp": {
+            "type": "video_capture",
+            "url": "rtsp://10.32.225.48:8554/test"
+        },
+        "ztk": {
+            "type": "ztkcam_source"
+        },
+        "afs_canny": {
+            "type": "afs_canny",
+            "model": "/mnt/models_2.1/Face/Anti-facespoofing/face_spoof_canny.bmodel",
+            "weighting": 1,
+            "threshold": 0.8
+        },
+        "afs_classify35": {
+            "type": "afs_classify",
+            "model": "/mnt/models_2.1/Face/Anti-facespoofing/classify/classify_0703_face_crop_v1_folded.1x10.bmodel",
+            "scaleratio": 3.5,
+            "weighting": 1,
+            "threshold": 3.5
+        },
+        "afs_classify06": {
+            "type": "afs_classify",
+            "model": "/mnt/models_2.1/Face/Anti-facespoofing/classify/classify_0707_face_crop_v1_folded.1x10.bmodel",
+            "scaleratio": 0.6,
+            "weighting": 1,
+            "threshold": 0.6
+        },
+        "afs_classify_hsv": {
+            "type": "afs_classify_hsv_ycbcr",
+            "model": "/mnt/models_2.1/Face/Anti-facespoofing/classify_hsv_ycbcr/classify_0706_hsv_ycbcr_v1_folded.1x10.bmodel",
+            "scaleratio": 0.7,
+            "weighting": 1,
+            "threshold": 0.25
+        },
+        "afs_result": {
+            "type": "afs_result",
+            "threshold": 0.5,
+            "vote_threshold": 0.6,
+            "vote_iou_threshold": 0.5,
+            "vote_size": 10
+        },
+        "http": {
+            "type": "multipart<image_t, VectorPack>",
+            "ip": "10.32.225.48",
+            "port": 9555,
+            "path": "/visualize/1",
+            "names": [
+                "image\"; filename=\"1.jpg",
+                "result"
+            ]
+        },
+        "filedump": {
+            "type": "vectorpackdump",
+            "filepath": "/test.log"
+        }
+    },
+    "pipeline_groups": {
+        "1": {
+            "pipelines": [
+                {
+                    "components": [
+                        "ztk"
+                    ],
+                    "output_types": [
+                        "image"
+                    ],
+                    "buffer_size": 2,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "mtcnn",
+                        "afs_classify06",
+                        "afs_classify_hsv",
+                        "afs_result"
+                    ],
+                    "output_types": [
+                        "image",
+                        "vector_pack"
+                    ],
+                    "buffer_size": 2,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "http"
+                    ]
+                }
+            ]
+        }
+    }
+}

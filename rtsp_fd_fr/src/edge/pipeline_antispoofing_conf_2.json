@@ -1,0 +1,122 @@
+{
+    "components": {
+        "tinyssh": {
+            "type": "face_detection",
+            "algorithm": "tinyssh",
+            "models": [
+                "/system/data/bmodel/tiny_ssh.bmodel",
+                "/system/data/bmodel/det3.bmodel"
+            ]
+        },
+        "rtsp": {
+            "type": "video_capture",
+            "url": "rtsp://10.34.33.96:8554/test"
+        },
+        "uvc": {
+            "type": "ztkcam_source"
+        },
+        "afs_canny": {
+            "type": "afs_canny",
+            "model": "/system/data/bmodel/antispoofing/face_spoof_canny.bmodel",
+            "weighting": 1,
+            "threshold": 0.8
+        },
+        "afs_classify": {
+            "type": "afs_classify",
+            "model": "/system/data/bmodel/antispoofing/face_spoof_classify.bmodel",
+            "weighting": 1,
+            "threshold": 0.19
+        },
+        "afs_classify_hsv_ycbcr": {
+            "type": "afs_classify_hsv_ycbcr",
+            "model": "/system/data/bmodel/antispoofing/face_spoof_classify_hsv_ycbcr.bmodel",
+            "weighting": 1,
+            "threshold": 0.25
+        },
+        "afs_patch": {
+            "type": "afs_patch",
+            "model": "/system/data/bmodel/antispoofing/face_spoof_patch.bmodel"
+        },
+        "afs_lbpsvm": {
+            "type": "afs_lbpsvm",
+            "model_dir": "/mnt/src/models_2.1/Face/Anti-facespoofing/",
+            "svm": "face_spoof_svm.model",
+            "mean": "face_spoof_train_mean.dat",
+            "std": "face_spoof_train_std.dat",
+            "weighting": 1,
+            "threshold": 0.0
+        },
+        "afs_cvbg": {
+            "type": "afs_cvbg"
+        },
+        "afs_depth": {
+            "type": "afs_depth",
+            "model": "/system/data/bmodel/antispoofing/face_spoof_depth.bmodel",
+            "threshold": 20000
+        },
+        "afs_cvsharp": {
+            "type": "afs_cvsharp",
+            "threshold": 200
+        },
+        "afs_led_controller": {
+            "type": "afs_led_controller",
+            "mean_threshold": 60,
+            "std_dev_threshold": 20
+        },
+        "afs_result": {
+            "type": "afs_result",
+            "threshold": 0.2,
+            "vote_threshold": 0.6,
+            "vote_iou_threshold": 0.7,
+            "vote_size": 30
+        },
+        "http": {
+            "type": "multipart<image_t, VectorPack>",
+            "ip": "10.34.33.96",
+            "port": 9555,
+            "path": "/visualize/1",
+            "names": [
+                "image\"; filename=\"1.jpg",
+                "result"
+            ]
+        },
+        "filedump": {
+            "type": "vectorpackdump",
+            "filepath": "/test.log"
+        }
+    },
+    "pipeline_groups": {
+        "1": {
+            "pipelines": [
+                {
+                    "components": [
+                        "rtsp"
+                    ],
+                    "output_types": [
+                        "image"
+                    ],
+                    "buffer_size": 2,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "tinyssh",
+                        "afs_classify",
+                        "afs_result"
+                    ],
+                    "output_types": [
+                        "image",
+                        "vector_pack"
+                    ],
+                    "buffer_size": 2,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "http"
+                    ]
+                }
+            ]
+        }
+    }
+}

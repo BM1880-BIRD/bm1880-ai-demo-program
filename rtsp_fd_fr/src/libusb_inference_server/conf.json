@@ -1,0 +1,16 @@
+{
+    "openpose": {
+        "model_path": "/system/data/bmodel/openpose_coco_128x224.bmodel",
+        "multi_detect": 1
+    },
+    "yolov2": {
+        "algorithm": "yolov2",
+        "model": "yolov2_1_3_608_608.bmodel",
+        "model_dir": "/system/data/bmodel/yolo/"
+    },
+    "yolov3": {
+        "algorithm": "yolov3",
+        "model": "yolov3_1_3_608_608.bmodel",
+        "model_dir": "/system/data/bmodel/yolo/"
+    }
+}

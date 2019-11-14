@@ -1,0 +1,45 @@
+{
+    "components": {
+        "tinyssh": {
+            "type": "face_detection",
+            "algorithm": "tinyssh",
+            "models": [
+                "/system/data/bmodel/tiny_ssh.bmodel",
+                "/system/data/bmodel/det3.bmodel"
+            ]
+        },
+        "bmface": {
+            "type": "face_recognition",
+            "algorithm": "bmface",
+            "models": [
+                "/system/data/bmodel/bmface.bmodel"
+            ]
+        },
+        "register_face": {
+            "type": "register_face",
+            "repository": "/data/repository"
+        },
+        "images": {
+            "type": "image_files",
+            "path": "/images",
+            "extensions": [
+                "jpg"
+            ],
+            "recursive": true
+        }
+    },
+    "pipeline_groups": {
+        "1": {
+            "pipelines": [
+                {
+                    "components": [
+                        "images",
+                        "tinyssh",
+                        "bmface",
+                        "register_face"
+                    ]
+                }
+            ]
+        }
+    }
+}

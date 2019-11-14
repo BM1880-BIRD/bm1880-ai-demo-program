@@ -1,0 +1,1 @@
+set(MIN_QNN_VERSION 1.0.0)

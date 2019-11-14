@@ -1,0 +1,146 @@
+{
+    "components": {
+        "tinyssh": {
+            "type": "face_detection",
+            "algorithm": "tinyssh",
+            "models": [
+                "/system/data/bmodel/tiny_ssh.bmodel",
+                "/system/data/bmodel/det3.bmodel"
+            ]
+        },
+        "rtsp": {
+            "type": "video_capture",
+            "url": "rtsp://192.168.0.100:8554/test"
+        },
+        "uvc": {
+            "type": "ztkcam_source"
+        },
+        "antispoof_cvbg": {
+            "type": "antifacespoofing",
+            "model_dir": "/system/data/bmodel/antispoofing",
+            "use_queue": false,
+            "cvbg": {
+                "enable": true
+            }
+        },
+        "antispoof_cvsharpness": {
+            "type": "antifacespoofing",
+            "model_dir": "/system/data/bmodel/antispoofing",
+            "use_queue": false,
+            "cvsharpness": {
+                "enable": true,
+                "threshold": 200
+            }
+        },
+        "antispoof_depth": {
+            "type": "antifacespoofing",
+            "model_dir": "/system/data/bmodel/antispoofing",
+            "use_queue": false,
+            "depth": {
+                "enable": true,
+                "threshold": 20000
+            }
+        },
+        "antispoof_patch": {
+            "type": "antifacespoofing",
+            "model_dir": "/system/data/bmodel/antispoofing",
+            "use_queue": false,
+            "patch": {
+                "enable": true
+            }
+        },
+        "antispoof_classify": {
+            "type": "antifacespoofing",
+            "model_dir": "/system/data/bmodel/antispoofing",
+            "use_queue": false,
+            "classify": {
+                "enable": true,
+                "threshold": 0.19
+            }
+        },
+        "antispoof_classify_hsv_ycbcr": {
+            "type": "antifacespoofing",
+            "model_dir": "/system/data/bmodel/antispoofing",
+            "use_queue": false,
+            "classify_hsv_ycbcr": {
+                "enable": true,
+                "threshold": 0.25
+            }
+        },
+        "antispoof_canny": {
+            "type": "antifacespoofing",
+            "model_dir": "/system/data/bmodel/antispoofing",
+            "use_queue": false,
+            "canny": {
+                "enable": true,
+                "threshold": 0.8
+            }
+        },
+        "antispoof_lbpsvm": {
+            "type": "antifacespoofing",
+            "model_dir": "/mnt/networks/test/models_2.1/Face/Anti-facespoofing/",
+            "model_files" : {
+                "svm": "face_spoof_svm.model",
+                "mean": "face_spoof_train_mean.dat",
+                "std": "face_spoof_train_std.dat"
+            },
+            "use_queue": false,
+            "lbpsvm": {
+                "enable": true,
+                "threshold": 0.0
+            }
+        },
+        "http": {
+            "type": "multipart<image_t, VectorPack>",
+            "ip": "192.168.0.100",
+            "port": 9555,
+            "path": "/visualize/1",
+            "names": [
+                "image\"; filename=\"1.jpg",
+                "result"
+            ]
+        },
+        "filedump": {
+            "type": "vectorpackdump",
+            "filepath": "/test.log"
+        }
+    },
+    "pipeline_groups": {
+        "1": {
+            "pipelines": [
+                {
+                    "components": [
+                        "uvc"
+                    ],
+                    "output_types": [
+                        "image"
+                    ],
+                    "buffer_size": 2,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "tinyssh",
+                        "antispoof_cvbg",
+                        "antispoof_cvsharpness",
+                        "antispoof_depth",
+                        "antispoof_patch",
+                        "antispoof_lbpsvm",
+                        "antispoof_canny"
+                    ],
+                    "output_types": [
+                        "image",
+                        "vector_pack"
+                    ],
+                    "buffer_size": 2,
+                    "buffer_mode": "dropping"
+                },
+                {
+                    "components": [
+                        "http"
+                    ]
+                }
+            ]
+        }
+    }
+}
