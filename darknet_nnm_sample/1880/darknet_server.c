@@ -53,12 +53,23 @@ void write_png_to_memory(image im, unsigned char *outbuffer, int *outlength)
 
 void yolo_inference(char *datacfg, char *cfgfile, char *weightfile, char *namefile, unsigned char *buffer, int length, float thresh, float hier_thresh, unsigned char *outbuffer, int *outlength)
 {
-    list *options = read_data_cfg(datacfg);
-    char *name_list = option_find_str(options, "names", namefile);
-    char **names = get_labels(name_list);
+    static int isfirst = 1;
+    static list *options = 0;
+    static char *name_list = 0;
+    static char **names = 0;
+    static image **alphabet = 0;
+    static network *net = 0;
 
-    image **alphabet = load_alphabet();
-    network *net = load_network(cfgfile, weightfile, 0);
+    if (isfirst)
+    {
+        isfirst = 0;
+        options = read_data_cfg(datacfg);
+        name_list = option_find_str(options, "names", namefile);
+        names = get_labels(name_list);
+        alphabet = load_alphabet();
+        net = load_network(cfgfile, weightfile, 0);
+    }
+
     set_batch_network(net, 1);
     srand(2222222);
     double time;
@@ -105,7 +116,7 @@ int main(int argc, char **argv)
     int length = 0;
 
     unsigned char outbuffer[BUFFER_SIZE];
-    unsigned char *tmpbuf =  outbuffer;
+    unsigned char *tmpbuf;
     int outlength;
     int remainlength;
     int writelength;
@@ -145,6 +156,7 @@ int main(int argc, char **argv)
         printf("image size is %d bytes\n", outlength);
         printf("writing data..\n");
         remainlength = outlength;
+        tmpbuf = outbuffer;
         while (remainlength > 0)
         {
             writelength = remainlength > split ? split : remainlength;
