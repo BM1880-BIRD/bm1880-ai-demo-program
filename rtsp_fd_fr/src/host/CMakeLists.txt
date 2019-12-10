@@ -16,4 +16,3 @@ foreach (PROG_CPP ${PROG_CPPS})
     target_link_libraries (${PROG_NAME} ${MODULE_LIBRARIES})
 endforeach()
 
-add_subdirectory(custom)

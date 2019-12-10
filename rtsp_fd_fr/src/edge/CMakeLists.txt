@@ -16,8 +16,4 @@ foreach (PROG_CPP ${PROG_CPPS})
     target_link_libraries (${PROG_NAME} ${MODULE_LIBRARIES})
 endforeach()
 
-if(${PLATFORM} STREQUAL "soc_bm1880_asic")
-    add_subdirectory(custom)
-endif()
-
 add_subdirectory(test)
