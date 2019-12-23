@@ -258,7 +258,7 @@ void* BmFaceThread(void *arg)
 				BM_FACE_LOG(LOG_DEBUG_USER_3,cout << "match_result: " << match_result.matched
 					<< " " << match_result.id << " " << match_result.score << endl);
 
-				string match_name = "nuknown";
+				string match_name = "unknown";
 				if(match_result.matched == true) {
 					match_name = bm_repo.get_name(match_result.id).value_or("");
 				}
